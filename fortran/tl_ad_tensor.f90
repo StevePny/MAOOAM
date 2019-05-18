@@ -97,13 +97,19 @@ CONTAINS
     INTEGER :: i
     INTEGER :: AllocStat 
     ALLOCATE(tltensor(ndim),count_elems(ndim), STAT=AllocStat)
-    IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+    IF (AllocStat /= 0) then
+      print *, "init_tltensor:: AllocStat = ", AllocStat
+      STOP "*** Not enough memory ! ***"
+    ENDIF
     count_elems=0
     CALL compute_tltensor(tl_add_count)
 
     DO i=1,ndim
        ALLOCATE(tltensor(i)%elems(count_elems(i)), STAT=AllocStat)
-       IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+       IF (AllocStat /= 0) then
+         print *, "init_tltensor:: AllocStat = ", AllocStat
+         STOP "*** Not enough memory ! ***"
+       ENDIF
     END DO
 
     DEALLOCATE(count_elems, STAT=AllocStat)
@@ -193,13 +199,19 @@ CONTAINS
     INTEGER :: i
     INTEGER :: AllocStat 
     ALLOCATE(adtensor(ndim),count_elems(ndim), STAT=AllocStat)
-    IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+    IF (AllocStat /= 0) then
+      print *, "init_adtensor:: AllocStat = ", AllocStat
+      STOP "*** Not enough memory ! ***"
+    ENDIF
     count_elems=0
     CALL compute_adtensor(ad_add_count)
 
     DO i=1,ndim
        ALLOCATE(adtensor(i)%elems(count_elems(i)), STAT=AllocStat)
-       IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+       IF (AllocStat /= 0) then
+         print *, "init_adtensor:: AllocStat = ", AllocStat
+         STOP "*** Not enough memory ! ***"
+       ENDIF
     END DO
 
     DEALLOCATE(count_elems, STAT=AllocStat)
@@ -294,13 +306,19 @@ CONTAINS
     INTEGER :: i
     INTEGER :: AllocStat 
     ALLOCATE(adtensor(ndim),count_elems(ndim), STAT=AllocStat)
-    IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+    IF (AllocStat /= 0) then
+      print *, "init_adtensor_ref:: AllocStat = ", AllocStat
+      STOP "*** Not enough memory ! ***"
+    ENDIF
     count_elems=0
     CALL compute_adtensor_ref(ad_add_count_ref)
 
     DO i=1,ndim
        ALLOCATE(adtensor(i)%elems(count_elems(i)), STAT=AllocStat)
-       IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+       IF (AllocStat /= 0) then
+         print *, "init_adtensor_ref:: AllocStat = ", AllocStat
+         STOP "*** Not enough memory ! ***"
+       ENDIF
     END DO
 
     DEALLOCATE(count_elems, STAT=AllocStat)

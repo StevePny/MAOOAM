@@ -36,7 +36,10 @@ CONTAINS
   SUBROUTINE init_integrator
     INTEGER :: AllocStat
     ALLOCATE(buf_y1(0:ndim),buf_kA(0:ndim),buf_kB(0:ndim) ,STAT=AllocStat)
-    IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+    IF (AllocStat /= 0) then
+      print *, "init_integrator:: AllocStat = ", AllocStat
+      STOP "*** Not enough memory ! ***"
+    ENDIF
   END SUBROUTINE init_integrator
   
   !> Routine computing the tendencies of the model

@@ -44,7 +44,10 @@ CONTAINS
    
     IF (ndim == 0) STOP "*** Number of dimensions is 0! ***"
     ALLOCATE(IC(0:ndim),seed(j), STAT=AllocStat)
-    IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+    IF (AllocStat /= 0) then
+      print *, "load_IC:: AllocStat = ", AllocStat
+      STOP "*** Not enough memory ! ***"
+    ENDIF
 
     INQUIRE(FILE='./IC.nml',EXIST=exists)
 

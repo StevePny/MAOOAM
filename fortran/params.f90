@@ -124,7 +124,10 @@ CONTAINS
     READ(8,nml=numblocs)
 
     ALLOCATE(oms(nboc,2),ams(nbatm,2), STAT=AllocStat)
-    IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+    IF (AllocStat /= 0) then
+      print *, "init_nml:: AllocStat = ", AllocStat
+      STOP "*** Not enough memory ! ***"
+    ENDIF
 
     READ(8,nml=modeselection)
     CLOSE(8)

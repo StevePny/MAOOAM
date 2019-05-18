@@ -49,7 +49,10 @@ CONTAINS
     DO i=1,ndim
        IF (dst(i)%nelems/=0) STOP "*** copy_coo : Destination coolist not empty ! ***"
        ALLOCATE(dst(i)%elems(src(i)%nelems), STAT=AllocStat)
-       IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+       IF (AllocStat /= 0) then
+         print *, "copy_coo:: AllocStat = ", AllocStat
+         STOP "*** Not enough memory ! ***"
+       ENDIF
        DO j=1,src(i)%nelems
           dst(i)%elems(j)%j=src(i)%elems(j)%j
           dst(i)%elems(j)%k=src(i)%elems(j)%k
@@ -74,7 +77,10 @@ CONTAINS
        ENDDO
        IF (dst(i)%nelems/=0) STOP "*** mat_to_coo : Destination coolist not empty ! ***"
        ALLOCATE(dst(i)%elems(n), STAT=AllocStat)
-       IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+       IF (AllocStat /= 0) then
+         print *, "mat_to_coo:: AllocStat = ", AllocStat
+         STOP "*** Not enough memory ! ***"
+       ENDIF
        n=0
        DO j=1,ndim
           IF (ABS(src(i,j))>real_eps) THEN
@@ -130,7 +136,10 @@ CONTAINS
        IF (jcoo_ij(i)%nelems/=0) STOP "*** jsparse_mul : Destination coolist not empty ! ***"
        nj=2*coolist_ijk(i)%nelems
        ALLOCATE(jcoo_ij(i)%elems(nj), STAT=AllocStat)
-       IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+       IF (AllocStat /= 0) then
+         print *, "jsparse_mul:: AllocStat = ", AllocStat
+         STOP "*** Not enough memory ! ***"
+       ENDIF
        nj=0
        DO n=1,coolist_ijk(i)%nelems
           j=coolist_ijk(i)%elems(n)%j
@@ -333,7 +342,10 @@ CONTAINS
                 IF (AllocStat /= 0) STOP "*** Deallocation problem ! ***"
              ENDIF
              ALLOCATE(dst(i)%elems(src(i)%nelems), STAT=AllocStat)
-             IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+             IF (AllocStat /= 0) then
+               print *, "add_to_tensor:: AllocStat = ", AllocStat
+               STOP "*** Not enough memory ! ***"
+             ENDIF
              n=0
           ELSE
              n=dst(i)%nelems
@@ -346,7 +358,10 @@ CONTAINS
              DEALLOCATE(dst(i)%elems, STAT=AllocStat)
              IF (AllocStat /= 0) STOP "*** Deallocation problem ! ***"
              ALLOCATE(dst(i)%elems(src(i)%nelems+n), STAT=AllocStat)
-             IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+             IF (AllocStat /= 0) then
+               print *, "add_to_tensor:: AllocStat = ", AllocStat
+               STOP "*** Not enough memory ! ***"
+             ENDIF
              DO j=1,n
                 dst(i)%elems(j)%j=celems(j)%j
                 dst(i)%elems(j)%k=celems(j)%k
@@ -424,7 +439,10 @@ CONTAINS
        READ(30,*) ir,n
        IF (n /= 0) THEN
           ALLOCATE(t(i)%elems(n), STAT=AllocStat)
-          IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+          IF (AllocStat /= 0) then
+            print *, "load_tensor_from_file:: AllocStat = ", AllocStat
+            STOP "*** Not enough memory ! ***"
+          ENDIF
           t(i)%nelems=n
        ENDIF
        DO n=1,t(i)%nelems

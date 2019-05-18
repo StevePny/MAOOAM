@@ -446,7 +446,10 @@ CONTAINS
     ! Definition of the types and wave numbers tables
 
     ALLOCATE(owavenum(noc),awavenum(natm), STAT=AllocStat)
-    IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
+    IF (AllocStat /= 0) then
+      print *, "init_inprod:: AllocStat = ", AllocStat
+      STOP "*** Not enough memory ! ***"
+    ENDIF
 
     j=0
     DO i=1,nbatm
