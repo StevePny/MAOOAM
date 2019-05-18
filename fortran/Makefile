@@ -45,7 +45,7 @@ ifeq ($(COMPILER),gfortran)
   
   ifeq ($(COMPILER),gfortran)
     ifeq ($(GE40600), 0)
-      $(error GCC/gfortran version $(GVERSION) detected. This program uses features of gfortran >= 4.6.0. Please update your toolchain)
+#     $(error GCC/gfortran version $(GVERSION) detected. This program uses features of gfortran >= 4.6.0. Please update your toolchain)
     endif
   else
     $(warning This code was optimized for gfortran >= 4.6.0 and has not been tested with other compilers)
