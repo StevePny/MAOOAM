@@ -15,7 +15,8 @@ MODULE stat
   USE params, only: ndim
   IMPLICIT NONE
 
-  PRIVATE
+! PRIVATE
+  PUBLIC !STEVE
   
   INTEGER :: i=0 !< Number of stats accumulated
   
@@ -35,7 +36,10 @@ MODULE stat
       INTEGER :: AllocStat
       
       ALLOCATE(m(0:ndim),mprev(0:ndim),v(0:ndim),mtmp(0:ndim), STAT=AllocStat)
-      IF (AllocStat /= 0) STOP '*** Not enough memory ***'
+      IF (AllocStat /= 0) then
+        print *, "init_stat:: AllocStat = ", AllocStat
+        STOP '*** Not enough memory ***'
+      ENDIF
       m=0.D0
       mprev=0.D0
       v=0.D0
