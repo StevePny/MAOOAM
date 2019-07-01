@@ -71,7 +71,7 @@ module MODEL
       file=__FILE__)) &
       return  ! bail out
 
-    !STEVE: add a finalize routine
+    !STEVE: add a finalize routine 
     call NUOPC_CompSetEntryPoint(model, ESMF_METHOD_FINALIZE, userRoutine=Finalize, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
