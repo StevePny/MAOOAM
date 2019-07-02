@@ -5,17 +5,27 @@ module maooam_wrapper
 
 
 public :: maooam_initialize, maooam_run, maooam_finalize
+public :: maooam_natm, maooam_nocn
+
+integer :: maooam_natm
+integer :: maooam_nocn
 
 contains
 
 
 !------------------------------------------------------------------------------
-subroutine maooam_initialize()
+subroutine maooam_initialize(X0)
 !------------------------------------------------------------------------------
 
 use aotensor_def, only: init_aotensor
 use integrator, only: init_integrator
 use stat, only: init_stat  ! Running statistics data
+use ic_def, only: load_IC
+
+use params, only: natm, noc
+use ic_def, only: IC
+
+real(kind=8), dimension(:), pointer, intent(inout) :: X0
 
 print *, "maooam_wrapper :: call init_aotensor... (Reads all of the namelist files: params.nml, modeselection.nml, int_params.nml)"
 call init_aotensor
@@ -24,45 +34,50 @@ call init_integrator  ! Initialize the integrator
 print *, "maooam_wrapper :: call init_stat..."
 call init_stat        ! Initialize the statistics operations
 
+! Initialize needed parameters for ESMF cap
+maooam_natm = natm
+maooam_nocn = noc
+
+! Load the initial conditions
+call load_IC
+X0 = IC
+
 end subroutine maooam_initialize
 
 
-
 !------------------------------------------------------------------------------
-subroutine maooam_run(X0,Xf,t,dt,Nt,component)
+subroutine maooam_run(X,t,dt,Nt,component)
 !------------------------------------------------------------------------------
 
 use integrator, only: step
-real(kind=8), dimension(:), intent(in)  :: X0
-real(kind=8), dimension(:), intent(out) :: Xf
+real(kind=8), dimension(:), pointer, intent(inout)  :: X
 real(kind=8), intent(inout) :: t
 real(kind=8), intent(in) :: dt
 integer, intent(in) :: Nt
 character(3), intent(in), optional :: component !empty, 'atm', or 'ocn'. If the latter two cases, uses the other part as fixed forcing
 ! https://stackoverflow.com/questions/43351338/passing-a-value-for-an-optional-fortran-parameter-that-will-return-false-for-pre
 !character(3), allocatable, intent(in), optional :: component !empty, 'atm', or 'ocn'. If the latter two cases, uses the other part as fixed forcing
-real(kind=8), allocatable, dimension(:) :: X 
+real(kind=8), allocatable, dimension(:) :: Xnew
 integer :: n
 
 ! Setup array for iterating
-n = size(X0)
-allocate(X(n))
-X=X0
+n = size(X)
+allocate(Xnew(n))
 
 print *, "maooam_run :: init X = "
 print *, X
 
 !Cycle MAOOAM through this time step of JEDI
 do n = 1,Nt
-  call step(X,t,dt,Xf)
+  call step(X,t,dt,Xnew)
 ! Use the following to support forcing from atmosphere or ocean on the full state.
 ! call step(X,t,dt,Xnew,component)
-  X=Xf
+  X=Xnew
   ! Debug:
   print *, X
 enddo
 print *, "maooam_run:: final X = "
-print *, Xf
+print *, X
 
 end subroutine maooam_run
 

@@ -77,7 +77,7 @@ CONTAINS
            CALL random_seed(get=seed)
            IC=0
            IC(0)=1.0d0
-           WRITE(6,*) "*** IC.nml namelist written. Starting with initial condition in IC.nml !***"
+           WRITE(6,*) "*** IC.nml namelist written. Starting with zero initial condition !***"
          CASE ('read')
            CALL init_random_seed()
            CALL random_seed(get=seed)
@@ -94,6 +94,7 @@ CONTAINS
        size_of_random_noise=0.D0
        WRITE(6,*) "*** IC.nml namelist written. Starting with 0 as initial condition !***"
     END IF
+
     OPEN(8, file="IC.nml", status='REPLACE')
     WRITE(8,'(a)') "!------------------------------------------------------------------------------!"
     WRITE(8,'(a)') "! Namelist file :                                                              !"

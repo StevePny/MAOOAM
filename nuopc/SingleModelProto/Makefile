@@ -43,8 +43,9 @@ include $(ESMFMKFILE)
 
 
 # -----------------------------------------------------------------------------
+MAOOAM_LIB=-L./ -lmaooam
 mainApp: mainApp.o driver.o model.o
-	$(ESMF_F90LINKER) $(ESMF_F90LINKOPTS) $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) -o $@ $^ $(ESMF_F90ESMFLINKLIBS)
+	$(ESMF_F90LINKER) $(ESMF_F90LINKOPTS) $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) -o $@ $^ $(ESMF_F90ESMFLINKLIBS) $(MAOOAM_LIB)
 
 # module dependencies:
 mainApp.o: driver.o
@@ -56,7 +57,7 @@ driver.o: model.o
 dust:
 	rm -f PET*.ESMF_LogFile *.nc *.stdout
 clean:
-	rm -f mainApp *.o *.mod
+	rm -f mainApp *.o driver.mod model.mod
 distclean: dust clean
 
 info:
