@@ -68,31 +68,33 @@ endif
 .SUFFIXES:
 .SUFFIXES: .f90 .o .mod .out .test
 
-PROGRAMS = maooam test_tl_ad
+#PROGRAMS = maooam test_tl_ad
+PROGRAMS = test_tl_ad
 
 MODULES = util.mod params.mod inprod_analytic$(ST).mod aotensor_def.mod ic_def.mod $(INTEGRATOR).mod stat.mod tensor.mod tl_ad_tensor.mod $(TL_AD_INTEGRATOR).mod $(IFPORT) maooam_wrapper.mod
 MODULE_OBJECTS = $(MODULES:.mod=.o)
 
-TEST_PROGRAMS = test_inprod_analytic test_aotensor
-TESTS = $(TEST_PROGRAMS:=.test)
+#TEST_PROGRAMS = test_inprod_analytic test_aotensor
+#TESTS = $(TEST_PROGRAMS:=.test)
 
-all: $(PROGRAMS) 
+#all: $(PROGRAMS) 
+all: maooam_wrapper.o archive
 
 debug: COMPILER_FLAGS = $(COMPILER_FLAGS_DBG) 
 debug: LD_FLAGS = $(LD_FLAGS_DBG)
 debug: all
 
-test: COMPILER_FLAGS = $(COMPILER_FLAGS_DBG) 
-test: LD_FLAGS = $(LD_FLAGS_DBG)
-test: $(TESTS)
+#test: COMPILER_FLAGS = $(COMPILER_FLAGS_DBG) 
+#test: LD_FLAGS = $(LD_FLAGS_DBG)
+#test: $(TESTS)
 
-test_inprod_analytic.test: test_inprod_analytic
-	./$< |sort  > tests/$<.out
-	diff tests/$<.out tests/$<.ref && echo PASS: $@ || echo FAIL: $@
+#test_inprod_analytic.test: test_inprod_analytic
+#	./$< |sort  > tests/$<.out
+#	diff tests/$<.out tests/$<.ref && echo PASS: $@ || echo FAIL: $@
 
-test_aotensor.test: test_aotensor 
-	./$< |sort  > tests/$<.out
-	diff tests/$<.out tests/$<.ref && echo PASS: $@ || echo FAIL: $@
+#test_aotensor.test: test_aotensor 
+#	./$< |sort  > tests/$<.out
+#	diff tests/$<.out tests/$<.ref && echo PASS: $@ || echo FAIL: $@
 
 %.mod: %.f90
 	$(COMPILER) $(COMPILER_FLAGS) -c $< $(LD_FLAGS) 
@@ -113,6 +115,10 @@ $(TL_AD_INTEGRATOR).mod: tl_ad_tensor.mod
 util.mod: $(IFPORT)
 #STEVE: adding to support compilation of wrapper module
 maooam_wrapper.mod: $(MODULES)
+
+#STEVE:
+archive:
+	ar cr libmaooam.a *.o
 
 clean:
 	$(RM) *.o *.mod $(PROGRAMS) $(TEST_PROGRAMS) tests/*.out

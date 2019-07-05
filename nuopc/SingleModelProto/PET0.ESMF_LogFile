@@ -1,7 +1,7 @@
-20190702 093942.470 INFO             PET0 Running with ESMF Version 7.1.0r
-20190702 093942.470 INFO             PET0 mainApp STARTING
-20190702 093942.471 INFO             PET0 driver - Creating model component MODEL without petList.
-20190702 093942.482 ERROR            PET0 ESMF_Util.F90:853 Invalid argument  - The string 'low' contains characters besides numbers, cannot convert to integer.
-20190702 093942.482 ERROR            PET0 driver:src/addon/NUOPC/src/NUOPC_Driver.F90:1897 Invalid argument  - Passing error in return code
-20190702 093942.482 ERROR            PET0 mainApp.F90:93 Invalid argument  - Passing error in return code
-20190702 093942.483 INFO             PET0 Finalizing ESMF
+20190705 102051.584 INFO             PET0 Running with ESMF Version 7.1.0r
+20190705 102051.584 INFO             PET0 mainApp STARTING
+20190705 102051.587 INFO             PET0 driver - Creating model component MODEL without petList.
+20190705 102051.602 ERROR            PET0 ESMF_Util.F90:853 Invalid argument  - The string 'low' contains characters besides numbers, cannot convert to integer.
+20190705 102051.602 ERROR            PET0 driver:src/addon/NUOPC/src/NUOPC_Driver.F90:1897 Invalid argument  - Passing error in return code
+20190705 102051.602 ERROR            PET0 mainApp.F90:93 Invalid argument  - Passing error in return code
+20190705 102051.602 INFO             PET0 Finalizing ESMF

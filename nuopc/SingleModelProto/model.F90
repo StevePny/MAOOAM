@@ -191,7 +191,7 @@ module MODEL
     rc = ESMF_SUCCESS
 
     ! Allocate pointer:
-    ndim = 40 !(temporary, will update in a moment by model initializaiton call)
+    ndim = 36 !(temporary, will update in a moment by model initializaiton call)
     print *, "ndim = ", ndim
     print *, "allocating farrayP(ndim)..."
     allocate(farrayP(ndim))    ! user controlled allocation
@@ -320,6 +320,9 @@ module MODEL
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+    print *, "ESMF_SUCCESS = ", ESMF_SUCCESS
+    print *, "rc = ", rc
 
     if (local_verbose) print *, "InitializeP2 :: finished."
 
