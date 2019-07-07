@@ -36,7 +36,9 @@ MODULE stat
     SUBROUTINE init_stat
       INTEGER :: AllocStat
       
-      ALLOCATE(m(0:ndim),mprev(0:ndim),v(0:ndim),mtmp(0:ndim), STAT=AllocStat)
+      if (.not. allocated(m) .or. .not. allocated(mprev) .or. .not. allocated(v) .or. .not. allocated(mtmp)) then !STEVE: fixing init clash
+        ALLOCATE(m(0:ndim),mprev(0:ndim),v(0:ndim),mtmp(0:ndim), STAT=AllocStat)
+      endif
       IF (AllocStat /= 0) then
         print *, "init_stat:: AllocStat = ", AllocStat
         STOP '*** Not enough memory ***'

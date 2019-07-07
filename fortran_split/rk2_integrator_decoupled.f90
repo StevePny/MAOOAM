@@ -21,22 +21,27 @@ MODULE integrator
   USE params, only: ndim, natm, noc
   USE tensor, only:sparse_mul3
   USE aotensor_def, only: aotensor
+
   IMPLICIT NONE
 
-  PRIVATE
+  PUBLIC :: init_integrator, step
+
+! PRIVATE
 
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: buf_y1 !< Buffer to hold the intermediate position (Heun algorithm)
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: buf_f0 !< Buffer to hold tendencies at the initial position
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: buf_f1 !< Buffer to hold tendencies at the intermediate position
 
-  PUBLIC :: init_integrator, step
 
 CONTAINS
   
   !> Routine to initialise the integration buffers.
   SUBROUTINE init_integrator
     INTEGER :: AllocStat
-    ALLOCATE(buf_y1(0:ndim),buf_f0(0:ndim),buf_f1(0:ndim) ,STAT=AllocStat)
+    
+    if (.not. allocated(buf_y1) .or. .not. allocated(buf_f0) .or. .not. allocated(buf_f1)) then !STEVE: fixing init clash
+      ALLOCATE(buf_y1(0:ndim),buf_f0(0:ndim),buf_f1(0:ndim) ,STAT=AllocStat)
+    endif
     IF (AllocStat /= 0) STOP "*** Not enough memory ! ***"
   END SUBROUTINE init_integrator
   

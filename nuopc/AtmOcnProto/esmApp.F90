@@ -61,7 +61,7 @@ program esmApp
     file=__FILE__)) &
     call ESMF_Finalize(endflag=ESMF_END_ABORT)
 
-  ! Call Initialize for the earth system Component
+  ! Call Initialize for the Earth system Component
   call ESMF_GridCompInitialize(esmComp, userRc=urc, rc=rc)
   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
     line=__LINE__, &
@@ -72,7 +72,7 @@ program esmApp
     file=__FILE__)) &
     call ESMF_Finalize(endflag=ESMF_END_ABORT)
   
-  ! Call Run  for earth the system Component
+  ! Call Run for the Earth system Component
   call ESMF_GridCompRun(esmComp, userRc=urc, rc=rc)
   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
     line=__LINE__, &
@@ -83,7 +83,7 @@ program esmApp
     file=__FILE__)) &
     call ESMF_Finalize(endflag=ESMF_END_ABORT)
   
-  ! Call Finalize for the earth system Component
+  ! Call Finalize for the Earth system Component
   call ESMF_GridCompFinalize(esmComp, userRc=urc, rc=rc)
   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
     line=__LINE__, &
@@ -94,7 +94,7 @@ program esmApp
     file=__FILE__)) &
     call ESMF_Finalize(endflag=ESMF_END_ABORT)
     
-  ! Destroy the earth system Component
+  ! Destroy the Earth system Component
   call ESMF_GridCompDestroy(esmComp, rc=rc)
   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
     line=__LINE__, &

@@ -13,6 +13,8 @@ module ATM
   !-----------------------------------------------------------------------------
   ! ATM Component.
   !-----------------------------------------------------------------------------
+  use maooam_atmos_wrapper, only: maooam_atmos_initialize, maooam_atmos_run, maooam_atmos_finalize
+  use maooam_atmos_wrapper, only: maooam_natm, maooam_nocn
 
   use ESMF
   use NUOPC
@@ -23,6 +25,8 @@ module ATM
   implicit none
   
   private
+
+  real(ESMF_KIND_R8), pointer :: farrayP(:)   ! Fortran array pointer
   
   public SetServices
   
@@ -65,7 +69,7 @@ module ATM
       file=__FILE__)) &
       return  ! bail out
     
-  end subroutine
+  end subroutine SetServices
   
   !-----------------------------------------------------------------------------
 
@@ -75,39 +79,75 @@ module ATM
     type(ESMF_Clock)     :: clock
     integer, intent(out) :: rc
     
+    logical :: local_verbose = .true.
+
     rc = ESMF_SUCCESS
-    
-    ! Disabling the following macro, e.g. renaming to WITHIMPORTFIELDS_disable,
-    ! will result in a model component that does not advertise any importable
-    ! Fields. Use this if you want to drive the model independently.
-#define WITHIMPORTFIELDS
-#ifdef WITHIMPORTFIELDS
-    ! importable field: sea_surface_temperature
-    call NUOPC_Advertise(importState, &
-      StandardName="sea_surface_temperature", name="sst", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-#endif
-    
-    ! exportable field: air_pressure_at_sea_level
-    call NUOPC_Advertise(exportState, &
-      StandardName="air_pressure_at_sea_level", name="pmsl", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    
-    ! exportable field: surface_net_downward_shortwave_flux
-    call NUOPC_Advertise(exportState, &
-      StandardName="surface_net_downward_shortwave_flux", name="rsns", rc=rc)
+   
+    !-------------------------------------------------------------------------- 
+    ! importable field: ocean_barotropic_streamfunction
+    !-------------------------------------------------------------------------- 
+    call NUOPC_FieldDictionaryAddEntry(standardName='ocean_barotropic_streamfunction', canonicalUnits='m^2/s', rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-  end subroutine
+    if (local_verbose) print *, "ATM::InitializeP1:: Calling NUOPC_Advertise for ocean_barotropic_streamfunction..."
+    call NUOPC_Advertise(importState, StandardName="ocean_barotropic_streamfunction", name="A", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !-------------------------------------------------------------------------- 
+    ! importable field: sea_water_temperature
+    !-------------------------------------------------------------------------- 
+    call NUOPC_FieldDictionaryAddEntry(standardName='sea_water_temperature', canonicalUnits='m^2/s', rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    if (local_verbose) print *, "ATM::InitializeP1:: Calling NUOPC_Advertise for sea_water_temperature..."
+    call NUOPC_Advertise(importState, StandardName="sea_water_temperature", name="T", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    
+    !-------------------------------------------------------------------------- 
+    ! exportable field: surface_net_downward_shortwave_flux
+    !-------------------------------------------------------------------------- 
+    call NUOPC_FieldDictionaryAddEntry(standardName='atmosphere_horizontal_streamfunction', canonicalUnits='m^2/s', rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    if (local_verbose) print *, "ATM::InitializeP1:: Calling NUOPC_Advertise for atmosphere_horizontal_streamfunction..."
+    call NUOPC_Advertise(exportState, StandardName="atmosphere_horizontal_streamfunction", name="psi", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !-------------------------------------------------------------------------- 
+    ! exportable field: air_pressure_at_sea_level
+    !-------------------------------------------------------------------------- 
+    call NUOPC_FieldDictionaryAddEntry(standardName='air_temperature', canonicalUnits='K', rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    if (local_verbose) print *, "ATM::InitializeP1:: Calling NUOPC_Advertise for air_temperature..."
+    call NUOPC_Advertise(exportState, StandardName="air_temperature", name="theta", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    
+  end subroutine InitializeP1
   
   !-----------------------------------------------------------------------------
 
@@ -119,99 +159,158 @@ module ATM
     
     ! local variables    
     type(ESMF_Field)        :: field
-    type(ESMF_Grid)         :: gridIn
-    type(ESMF_Grid)         :: gridOut
+    type(ESMF_Grid)         :: gridAtm
+    type(ESMF_Grid)         :: gridOcn
+
+    !STEVE: ESMF pointer to store grid
+    type(ESMF_DistGrid)         :: distgridAtm       ! DistGrid object
+    type(ESMF_DistGrid)         :: distgridOcn       ! DistGrid object
+    integer :: ndim, si, ei   ! ndim = model dimension, si = start index, ei = end index
+
+    logical :: local_verbose = .true.
     
     rc = ESMF_SUCCESS
-    
-    ! create a Grid object for Fields
-    gridIn = ESMF_GridCreateNoPeriDimUfrm(maxIndex=(/10, 100/), &
-      minCornerCoord=(/10._ESMF_KIND_R8, 20._ESMF_KIND_R8/), &
-      maxCornerCoord=(/100._ESMF_KIND_R8, 200._ESMF_KIND_R8/), &
-      coordSys=ESMF_COORDSYS_CART, staggerLocList=(/ESMF_STAGGERLOC_CENTER/), &
-      rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    gridOut = gridIn ! for now out same as in
-    
-#ifdef WITHIMPORTFIELDS
-    ! importable field: sea_surface_temperature
-    field = ESMF_FieldCreate(name="sst", grid=gridIn, &
-      typekind=ESMF_TYPEKIND_R8, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call NUOPC_Realize(importState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-#endif
 
-    ! exportable field: air_pressure_at_sea_level
-#ifdef CREATE_AND_REALIZE
-    ! This branch shows the standard procedure of creating a complete field
-    ! with Grid and memory allocation, and then calling Realize() for it.
-    field = ESMF_FieldCreate(name="pmsl", grid=gridOut, &
-      typekind=ESMF_TYPEKIND_R8, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call NUOPC_Realize(exportState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-#else
-    ! This branch shows the alternative way of "realizing" an advertised field.
-    ! It accesses the empty field that was created during advertise, and
-    ! finishes it, setting a Grid on it, and then calling FieldEmptyComplete().
-    ! No formal Realize() is then needed.
-    call ESMF_StateGet(exportState, field=field, itemName="pmsl", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call ESMF_FieldEmptySet(field, grid=gridOut, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call ESMF_FieldEmptyComplete(field, typekind=ESMF_TYPEKIND_R8, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-#define WITH_FORMAL_REALIZE
-#ifdef WITH_FORMAL_REALIZE
-    ! There is not need to formally call Realize() when completing the 
-    ! adverised field directly. However, calling Realize() also works.
-    call NUOPC_Realize(exportState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-#endif
-#endif
+    !--------------------------------------------------------------------------
+    ! Call model initialization routines, load initial conditions and assign to farrayP
+    !--------------------------------------------------------------------------
+    print *, "ATM::InitializeP2:: Calling maooam_atmos_initialize..."
+    call maooam_atmos_initialize()
+    print *, "ATM::InitializeP2:: Finished maooam_atmos_initialize."
 
-    ! exportable field: surface_net_downward_shortwave_flux
-    field = ESMF_FieldCreate(name="rsns", grid=gridOut, &
-      typekind=ESMF_TYPEKIND_R8, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call NUOPC_Realize(exportState, field=field, rc=rc)
+    ! Get model state dimension
+    ndim = 2*maooam_natm+2*maooam_nocn
+
+    if (ndim == 0 .or. ndim <= maooam_natm .or. ndim <= maooam_nocn) then
+      print *, "ATM::InitializeP2::ERROR:: ndim = ", 0
+      print *, "ATM::InitializeP2::EXITING..."
+      stop 'ATM'
+    endif
+
+    ! Allocate pointer:
+    print *, "ndim = ", ndim
+    print *, "allocating farrayP(ndim)..."
+    allocate(farrayP(ndim))    ! user controlled allocation
+    farrayP(1:10)  = 1.0d0            ! initialize to some value
+    farrayP(11:20) = 2.0d0            ! initialize to some value
+    farrayP(21:28) = 3.0d0            ! initialize to some value
+    farrayP(29:36) = 4.0d0            ! initialize to some value
+    print *, "farrayP = ", farrayP
+
+    !--------------------------------------------------------------------------
+    ! Set up ESMF grid objects
+    !--------------------------------------------------------------------------
+
+    ! create a distribution Grid object
+    distgridAtm = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_natm/), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-  end subroutine
+    ! Create the Grid objects
+    gridAtm = ESMF_GridCreate(distgrid=distgridAtm, name="atmos_grid", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! create a distribution Grid object
+    distgridOcn = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_nocn/), rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! Create the Grid objects
+    gridOcn = ESMF_GridCreate(distgrid=distgridOcn, name="ocean_grid", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !--------------------------------------------------------------------------
+    ! Get the importable arrays
+    !--------------------------------------------------------------------------
+
+    ! importable array: Ocean temperature
+    si = maooam_natm*2 + 1
+    ei = maooam_natm*2 + maooam_nocn
+    print *, "si, ei = ", si, ei
+    if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for T..."
+    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL,  name="T", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (local_verbose) print *, "ATM::InitializeP2:: Finished ESMF_FieldCreate for T."
+
+    call NUOPC_Realize(state=importState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! importable array: Ocean streamfunction
+    si = maooam_natm*2 + maooam_nocn + 1
+    ei = maooam_natm*2 + maooam_nocn + maooam_nocn
+    print *, "si, ei = ", si, ei
+    if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for A..."
+    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="A", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (local_verbose) print *, "ATM::InitializeP2:: Finished ESMF_FieldCreate for A."
+
+    call NUOPC_Realize(state=importState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !--------------------------------------------------------------------------
+    ! Get the exportable arrays
+    !--------------------------------------------------------------------------
+
+    ! exportable array: Atmospheric temperature
+    si = 1
+    ei = maooam_natm
+    print *, "si, ei = ", si, ei
+    if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for theta..."
+    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="theta", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (local_verbose) print *, "ATM::InitializeP2:: Finished ESMF_FieldCreate for theta."
+
+    call NUOPC_Realize(exportState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! exportable array: Atmospheric streamfunction
+    si = maooam_natm + 1
+    ei = maooam_natm + maooam_natm
+    print *, "si, ei = ", si, ei
+    if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for psi..."
+    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="psi", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (local_verbose) print *, "ATM::InitializeP2:: Finished ESMF_FieldCreate for psi."
+
+    call NUOPC_Realize(state=exportState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+  end subroutine InitializeP2
+
   
   !-----------------------------------------------------------------------------
 
@@ -224,13 +323,28 @@ module ATM
     type(ESMF_State)            :: importState, exportState
     character(len=160)          :: msgString
 
+    !STEVE: ESMF time information for the model
+    type(ESMF_Time)             :: startTime
+    type(ESMF_Time)             :: currTime
+    type(ESMF_TimeInterval)     :: timeStep
+
+    type(ESMF_Array) :: array
+    real(kind=8) :: X0,Xf
+    integer(kind=8) :: seconds
+    real(kind=8) :: t,dt
+    integer :: Nt
+
+    logical :: local_verbose = .true.
+
+    if (local_verbose) print *, "ATM::ModelAdvance :: commencing..."
+
 #define NUOPC_TRACE__OFF
 #ifdef NUOPC_TRACE
     call ESMF_TraceRegionEnter("ATM:ModelAdvance")
 #endif
 
     rc = ESMF_SUCCESS
-    
+ 
     ! query the Component for its clock, importState and exportState
     call NUOPC_ModelGet(model, modelClock=clock, importState=importState, &
       exportState=exportState, rc=rc)
@@ -240,11 +354,6 @@ module ATM
       return  ! bail out
 
     ! HERE THE MODEL ADVANCES: currTime -> currTime + timeStep
-    
-    ! Because of the way that the internal Clock was set by default,
-    ! its timeStep is equal to the parent timeStep. As a consequence the
-    ! currTime + timeStep is equal to the stopTime of the internal Clock
-    ! for this call of the ModelAdvance() routine.
     
     call ESMF_ClockPrint(clock, options="currTime", &
       preString="------>Advancing ATM from: ", unit=msgString, rc=rc)
@@ -270,10 +379,45 @@ module ATM
       file=__FILE__)) &
       return  ! bail out
 
+    !--------------------------------------------------------------------------
+    !--------------------------------------------------------------------------
+
+    !--------------------------------------------------------------------------
+    !STEVE: Assuming the model goes here:
+    !--------------------------------------------------------------------------
+    call ESMF_ClockGet(clock, startTime=startTime, currTime=currTime, timeStep=timeStep, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !STEVE: To get time information from the ESMF_Clock:
+    !STEVE: http://www.earthsystemmodeling.org/esmf_releases/non_public/ESMF_1_0_8/ESMF_refdoc/node5.html#SECTION050441000000000000000
+
+    call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+    t = real(seconds)
+    call ESMF_TimeIntervalGet(timeStep, s_i8=seconds, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+    dt = real(seconds)
+    Nt = 1 !STEVE: just run one step of dt
+
+    !STEVE: I'm assuming all I need to do is update the data array referenced by the pointer that is registered with the state object
+!   print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
+!   print *, farrayP            ! print PET-local farrayA directly
+    call maooam_atmos_run(X=farrayP,t=t,dt=dt,Nt=Nt) !,component)
+!   print *, "ModelAdvance:: Post- maooam model run: farrayP = "
+!   print *, farrayP            ! print PET-local farrayA directly
+
+
 #ifdef NUOPC_TRACE
     call ESMF_TraceRegionExit("ATM:ModelAdvance")
 #endif
     
-  end subroutine
+  end subroutine ModelAdvance
 
-end module
+end module ATM

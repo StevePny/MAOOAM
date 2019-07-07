@@ -1,0 +1,19 @@
+20190707 022334.390 INFO             PET0 Running with ESMF Version 7.1.0r
+20190707 022334.390 INFO             PET0 esmApp STARTING
+20190707 022334.391 INFO             PET0 esm - Creating model component ATM without petList.
+20190707 022334.392 INFO             PET0 esm - Creating model component OCN without petList.
+20190707 022334.393 INFO             PET0 esm - Creating connector component ATM-TO-OCN without petList.
+20190707 022334.393 INFO             PET0 esm - Creating connector component OCN-TO-ATM without petList.
+20190707 022334.408 ERROR            PET0 ESMCI_GridToMesh.C:116 GridToMesh() Invalid argument  - - Grid being used in Regrid call does not contain coordinates at appropriate staggerloc
+20190707 022334.408 ERROR            PET0 ESMCI_GridToMesh.C:787 GridToMesh() Invalid argument  - Internal subroutine call returned Error
+20190707 022334.408 ERROR            PET0 ESMCI_MeshCap.C:322 MeshCap::GridToMesh() Invalid argument  - Internal subroutine call returned Error
+20190707 022334.408 ERROR            PET0 ESMCI_GridUtil_F.C:257 c_esmc_gridtomesh() Invalid argument  - Internal subroutine call returned Error
+20190707 022334.408 ERROR            PET0 ESMF_GridUtil.F90:447 ESMF_GridToMesh() Invalid argument  - Internal subroutine call returned Error
+20190707 022334.408 ERROR            PET0 ESMF_FieldRegrid.F90:997 ESMF_FieldRegridStoreNX Invalid argument  - Internal subroutine call returned Error
+20190707 022334.408 ERROR            PET0 ATM-TO-OCN:src/addon/NUOPC/src/NUOPC_Connector.F90:5056 Invalid argument  - Passing error in return code
+20190707 022334.408 ERROR            PET0 ATM-TO-OCN:src/addon/NUOPC/src/NUOPC_Connector.F90:3424 Invalid argument  - Passing error in return code
+20190707 022334.408 ERROR            PET0 esm:src/addon/NUOPC/src/NUOPC_Driver.F90:1622 Invalid argument  - Phase 'IPDv05p6b' Initialize for connectorComp 1 -> 2: ATM-TO-OCN did not return ESMF_SUCCESS
+20190707 022334.408 ERROR            PET0 esm:src/addon/NUOPC/src/NUOPC_Driver.F90:1296 Invalid argument  - Passing error in return code
+20190707 022334.408 ERROR            PET0 esm:src/addon/NUOPC/src/NUOPC_Driver.F90:313 Invalid argument  - Passing error in return code
+20190707 022334.408 ERROR            PET0 esmApp.F90:71 Invalid argument  - Passing error in return code
+20190707 022334.408 INFO             PET0 Finalizing ESMF

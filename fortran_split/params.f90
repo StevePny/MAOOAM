@@ -123,7 +123,9 @@ CONTAINS
     OPEN(8, file="modeselection.nml", status='OLD', recl=80, delim='APOSTROPHE')
     READ(8,nml=numblocs)
 
-    ALLOCATE(oms(nboc,2),ams(nbatm,2), STAT=AllocStat)
+    if (.not. allocated(oms) .or. .not. allocated(ams)) then !STEVE: fixing init clash
+      ALLOCATE(oms(nboc,2),ams(nbatm,2), STAT=AllocStat)
+    endif
     IF (AllocStat /= 0) then
       print *, "init_nml:: AllocStat = ", AllocStat
       STOP "*** Not enough memory ! ***"

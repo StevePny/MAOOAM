@@ -1,50 +1,54 @@
-module maooam_wrapper
+module maooam_atmos_wrapper
 !STEVE:
 ! Wrapper module to (i)nitialize, (r)un, and (f)inalize
 ! the MAOOAM model
 
 
-public :: maooam_initialize, maooam_run, maooam_finalize
-public :: maooam_natm, maooam_nocn
+public :: maooam_atmos_initialize, maooam_atmos_run, maooam_atmos_finalize
+public :: maooam_natm
+public :: maooam_nocn
 
 integer :: maooam_natm
 integer :: maooam_nocn
 
+private
+
 logical, save :: first_flag = .true.
+character(3), parameter :: component = 'atm'
 
 contains
 
 
 !------------------------------------------------------------------------------
-subroutine maooam_initialize
+subroutine maooam_atmos_initialize
 !------------------------------------------------------------------------------
 
 use aotensor_def, only: init_aotensor
 use integrator, only: init_integrator
 use stat, only: init_stat  ! Running statistics data
 
-use params, only: natm, noc
+use params, only: natm
+use params, only: noc
 
 !real(kind=8), dimension(:), pointer, intent(inout) :: X0
 
-print *, "maooam_wrapper :: call init_aotensor... (Reads all of the namelist files: params.nml, modeselection.nml, int_params.nml)"
+print *, "maooam_atmos_wrapper :: call init_aotensor... (Reads the namelist files: params.nml, modeselection.nml, int_params.nml)"
 call init_aotensor
-print *, "maooam_wrapper :: call init_integrator..."
+print *, "maooam_atmos_wrapper :: call init_integrator..."
 call init_integrator  ! Initialize the integrator
-print *, "maooam_wrapper :: call init_stat..."
+print *, "maooam_atmos_wrapper :: call init_stat..."
 call init_stat        ! Initialize the statistics operations
 
 ! Initialize needed parameters for ESMF cap
 maooam_natm = natm
 maooam_nocn = noc
 
-
-end subroutine maooam_initialize
+end subroutine maooam_atmos_initialize
 
 
 
 !------------------------------------------------------------------------------
-subroutine maooam_run(X,t,dt,Nt,component)
+subroutine maooam_atmos_run(X,t,dt,Nt,component)
 !------------------------------------------------------------------------------
 
 use integrator, only: step
@@ -73,27 +77,27 @@ endif
 n = size(X)
 allocate(Xnew(n))
 
-print *, "maooam_run :: init X = "
+print *, "maooam_atmos_run :: init X = "
 print *, X
 
 !Cycle MAOOAM through this time step of JEDI
 do n = 1,Nt
-  call step(X,t,dt,Xnew)
-! Use the following to support forcing from atmosphere or ocean on the full state.
-! call step(X,t,dt,Xnew,component)
+! call step(X,t,dt,Xnew)
+  ! Use the following to support forcing from atmosphere or ocean on the full state.
+  call step(X,t,dt,Xnew,component)
   X=Xnew
   ! Debug:
   print *, X
 enddo
-print *, "maooam_run:: final X = "
+print *, "maooam_atmos_run:: final X = "
 print *, X
 
-end subroutine maooam_run
+end subroutine maooam_atmos_run
 
 
 
 !------------------------------------------------------------------------------
-subroutine maooam_finalize()
+subroutine maooam_atmos_finalize()
 !------------------------------------------------------------------------------
 
 use params, only: ams, oms    
@@ -102,7 +106,7 @@ use aotensor_def, only: aotensor !, count_elems
 use integrator, only: buf_y1,buf_f0,buf_f1
 use stat, only: m,mprev,v,mtmp,stat_i
 
-print *, "maooam_finalize :: start..."
+print *, "maooam_atmos_finalize :: start..."
 
 !STEVE: these data structures need to be manually
 !       removed because they are initiated inside
@@ -152,9 +156,9 @@ if (allocated(mtmp)) then
   deallocate(mtmp)
 endif
 
-print *, "maooam_finalize :: finished."
+print *, "maooam_atmos_finalize :: finished."
 
-end subroutine maooam_finalize
+end subroutine maooam_atmos_finalize
 
 
-end module maooam_wrapper
+end module maooam_atmos_wrapper

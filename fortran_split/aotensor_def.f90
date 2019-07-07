@@ -207,7 +207,12 @@ CONTAINS
 
     CALL init_inprod  ! Initialise the inner product tensors
 
-    ALLOCATE(aotensor(ndim),count_elems(ndim), STAT=AllocStat)
+    if (.not. allocated(count_elems)) then !STEVE: fixing init clash
+      ALLOCATE(count_elems(ndim), STAT=AllocStat)
+    endif
+    if (.not. allocated(aotensor)) then !STEVE: fixing init clash
+      ALLOCATE(aotensor(ndim), STAT=AllocStat)
+    endif
     IF (AllocStat /= 0) then
       print *, "init_aotensor:: AllocStat = ", AllocStat
       STOP "*** Not enough memory ! ***"
@@ -217,11 +222,13 @@ CONTAINS
     CALL compute_aotensor(add_count)
 
     DO i=1,ndim
-       ALLOCATE(aotensor(i)%elems(count_elems(i)), STAT=AllocStat)
-       IF (AllocStat /= 0) then
-         print *, "init_aotensor:: AllocStat = ", AllocStat
-         STOP "*** Not enough memory ! ***"
-       ENDIF
+      if (.not. allocated(aotensor(i)%elems)) then !STEVE: fixing init clash
+        ALLOCATE(aotensor(i)%elems(count_elems(i)), STAT=AllocStat)
+      endif
+      IF (AllocStat /= 0) then
+        print *, "init_aotensor:: AllocStat = ", AllocStat
+        STOP "*** Not enough memory ! ***"
+      ENDIF
     END DO
 
     DEALLOCATE(count_elems, STAT=AllocStat)

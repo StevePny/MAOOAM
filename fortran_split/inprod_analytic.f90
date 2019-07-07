@@ -445,7 +445,9 @@ CONTAINS
 
     ! Definition of the types and wave numbers tables
 
-    ALLOCATE(owavenum(noc),awavenum(natm), STAT=AllocStat)
+    if (.not. allocated(owavenum) .or. .not. allocated(awavenum)) then !STEVE: fixing init clash
+      ALLOCATE(owavenum(noc),awavenum(natm), STAT=AllocStat)
+    endif
     IF (AllocStat /= 0) then
       print *, "init_inprod:: AllocStat = ", AllocStat
       STOP "*** Not enough memory ! ***"
