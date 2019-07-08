@@ -119,6 +119,7 @@ maooam_wrapper.mod: $(MODULES)
 #STEVE:
 archive:
 	ar cr libmaooam.a *.o
+	rm *.o
 
 clean:
 	$(RM) *.o *.mod $(PROGRAMS) $(TEST_PROGRAMS) tests/*.out

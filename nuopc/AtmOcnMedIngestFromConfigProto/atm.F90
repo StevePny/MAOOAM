@@ -19,15 +19,13 @@ module ATM
 
   use ESMF
   use NUOPC
-  use NUOPC_Model, &
-    model_routine_SS    => SetServices, &
-    model_label_Advance => label_Advance
+  use NUOPC_Model, inheritModel => SetServices
   
   implicit none
   
   private
 
-  real(ESMF_KIND_R8), pointer :: farrayP(:)   ! Fortran array pointer
+  real(ESMF_KIND_R8), pointer :: farrayP(:,:)   ! Fortran array pointer
   
   public SetServices
   
@@ -42,7 +40,7 @@ module ATM
     rc = ESMF_SUCCESS
     
     ! the NUOPC model component will register the generic methods
-    call NUOPC_CompDerive(model, model_routine_SS, rc=rc)
+    call NUOPC_CompDerive(model, inheritModel, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -63,7 +61,7 @@ module ATM
       return  ! bail out
     
     ! attach specializing method(s)
-    call NUOPC_CompSpecialize(model, specLabel=model_label_Advance, &
+    call NUOPC_CompSpecialize(model, specLabel=label_Advance, &
       specRoutine=ModelAdvance, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
@@ -79,15 +77,14 @@ module ATM
     type(ESMF_State)     :: importState, exportState
     type(ESMF_Clock)     :: clock
     integer, intent(out) :: rc
-    
+
     logical :: local_verbose = .true.
-
+    
     rc = ESMF_SUCCESS
-
+    
     !-------------------------------------------------------------------------- 
     ! importable field: ocean_barotropic_streamfunction
     !-------------------------------------------------------------------------- 
-    if (local_Verbose) print *, "ATM::InitializeP1:: calling NUOPC_FieldDictionaryAddEntry..."
     call NUOPC_FieldDictionaryAddEntry(standardName='ocean_barotropic_streamfunction', canonicalUnits='m^2/s', rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
@@ -104,7 +101,6 @@ module ATM
     !-------------------------------------------------------------------------- 
     ! importable field: sea_water_temperature
     !-------------------------------------------------------------------------- 
-    if (local_Verbose) print *, "ATM::InitializeP1:: calling NUOPC_FieldDictionaryAddEntry..."
     call NUOPC_FieldDictionaryAddEntry(standardName='sea_water_temperature', canonicalUnits='m^2/s', rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
@@ -121,7 +117,6 @@ module ATM
     !-------------------------------------------------------------------------- 
     ! exportable field: atmosphere_horizontal_streamfunction
     !-------------------------------------------------------------------------- 
-    if (local_Verbose) print *, "ATM::InitializeP1:: calling NUOPC_FieldDictionaryAddEntry..."
     call NUOPC_FieldDictionaryAddEntry(standardName='atmosphere_horizontal_streamfunction', canonicalUnits='m^2/s', rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
@@ -138,7 +133,6 @@ module ATM
     !-------------------------------------------------------------------------- 
     ! exportable field: air_temperature
     !-------------------------------------------------------------------------- 
-    if (local_Verbose) print *, "ATM::InitializeP1:: calling NUOPC_FieldDictionaryAddEntry..."
     call NUOPC_FieldDictionaryAddEntry(standardName='air_temperature', canonicalUnits='K', rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
@@ -151,8 +145,7 @@ module ATM
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    
-    
+
   end subroutine InitializeP1
   
   !-----------------------------------------------------------------------------
@@ -169,12 +162,12 @@ module ATM
     type(ESMF_Grid)         :: gridOcn
 
     !STEVE: ESMF pointer to store grid
-!   type(ESMF_DistGrid)         :: distgridAtm       ! DistGrid object
-!   type(ESMF_DistGrid)         :: distgridOcn       ! DistGrid object
+    type(ESMF_DistGrid)         :: distgridAtm       ! DistGrid object
+    type(ESMF_DistGrid)         :: distgridOcn       ! DistGrid object
     integer :: ndim, si, ei   ! ndim = model dimension, si = start index, ei = end index
 
     logical :: local_verbose = .true.
-
+    
     rc = ESMF_SUCCESS
 
     !--------------------------------------------------------------------------
@@ -192,25 +185,24 @@ module ATM
       print *, "ATM::InitializeP2::EXITING..."
       stop 'ATM'
     endif
-    
+
     ! Allocate pointer:
     print *, "ndim = ", ndim
-    print *, "allocating farrayP(ndim)..."
-    allocate(farrayP(ndim))    ! user controlled allocation
-    farrayP(1:10)  = 1.0d0            ! initialize to some value
-    farrayP(11:20) = 2.0d0            ! initialize to some value
-    farrayP(21:28) = 3.0d0            ! initialize to some value
-    farrayP(29:36) = 4.0d0            ! initialize to some value
-    print *, "farrayP = ", farrayP
+    print *, "allocating farrayP(ndim,1)..."
+    allocate(farrayP(ndim,1))    ! user controlled allocation
+    farrayP(1:10,1)  = 1.0d0            ! initialize to some value
+    farrayP(11:20,1) = 2.0d0            ! initialize to some value
+    farrayP(21:28,1) = 3.0d0            ! initialize to some value
+    farrayP(29:36,1) = 4.0d0            ! initialize to some value
+    print *, "farrayP = ", farrayP    
 
-    ! create a Grid object for Fields
-    gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1/), maxIndex=(/maooam_natm/), name="atmos_grid", rc=rc)
+    gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_natm,1/), name="atmos_grid", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-    gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1/), maxIndex=(/maooam_nocn/), name="ocean_grid", rc=rc)
+    gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_nocn,1/), name="ocean_grid", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -225,7 +217,7 @@ module ATM
     ei = maooam_natm*2 + maooam_nocn
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for T..."
-    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL,  name="T", rc=rc)
+    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL,  name="T", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -243,7 +235,7 @@ module ATM
     ei = maooam_natm*2 + maooam_nocn + maooam_nocn
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for A..."
-    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="A", rc=rc)
+    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL, name="A", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -265,7 +257,7 @@ module ATM
     ei = maooam_natm
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for theta..."
-    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="theta", rc=rc)
+    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL, name="theta", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -283,7 +275,7 @@ module ATM
     ei = maooam_natm + maooam_natm
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for psi..."
-    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="psi", rc=rc)
+    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL, name="psi", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -307,9 +299,12 @@ module ATM
     ! local variables
     type(ESMF_Clock)            :: clock
     type(ESMF_State)            :: importState, exportState
-    type(ESMF_Time)             :: currTime, startTime
-    type(ESMF_TimeInterval)     :: timeStep
     character(len=160)          :: msgString
+
+    !STEVE: ESMF time information for the model
+    type(ESMF_Time)             :: startTime
+    type(ESMF_Time)             :: currTime
+    type(ESMF_TimeInterval)     :: timeStep
 
     real(kind=8), dimension(:), pointer :: X
     integer(kind=8) :: seconds
@@ -319,7 +314,6 @@ module ATM
     logical :: local_verbose = .true.
 
     if (local_verbose) print *, "ATM::ModelAdvance :: commencing..."
-
 
     rc = ESMF_SUCCESS
     
@@ -332,11 +326,6 @@ module ATM
       return  ! bail out
 
     ! HERE THE MODEL ADVANCES: currTime -> currTime + timeStep
-    
-    ! Because of the way that the internal Clock was set by default,
-    ! its timeStep is equal to the parent timeStep. As a consequence the
-    ! currTime + timeStep is equal to the stopTime of the internal Clock
-    ! for this call of the ModelAdvance() routine.
     
     call ESMF_ClockPrint(clock, options="currTime", &
       preString="------>Advancing ATM from: ", unit=msgString, rc=rc)
@@ -389,10 +378,10 @@ module ATM
     !STEVE: I'm assuming all I need to do is update the data array referenced by the pointer that is registered with the state object
 !   print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
-!   allocate(X(36))
-!   X = farrayP(:,1)
-    call maooam_atmos_run(X=farrayP,t=t,dt=dt,Nt=Nt) !,component)
-!   farrayP(:,1) = X
+    allocate(X(36))
+    X = farrayP(:,1)
+    call maooam_atmos_run(X=X,t=t,dt=dt,Nt=Nt) !,component)
+    farrayP(:,1) = X
 !   print *, "ModelAdvance:: Post- maooam model run: farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
 

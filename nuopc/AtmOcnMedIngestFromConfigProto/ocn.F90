@@ -13,22 +13,19 @@ module OCN
   !-----------------------------------------------------------------------------
   ! OCN Component.
   !-----------------------------------------------------------------------------
+
   use maooam_ocean_wrapper, only: maooam_ocean_initialize, maooam_ocean_run, maooam_ocean_finalize
   use maooam_ocean_wrapper, only: maooam_nocn, maooam_natm
 
   use ESMF
   use NUOPC
-  use NUOPC_Model, &
-    model_routine_SS      => SetServices, &
-    model_label_SetClock  => label_SetClock, &
-    model_label_Advance   => label_Advance
+  use NUOPC_Model, inheritModel => SetServices
   
   implicit none
   
   private
 
   real(ESMF_KIND_R8), pointer :: farrayP(:,:)   ! Fortran array pointer
-  integer, parameter :: fdim2 = 2
   
   public SetServices
   
@@ -43,7 +40,7 @@ module OCN
     rc = ESMF_SUCCESS
     
     ! the NUOPC model component will register the generic methods
-    call NUOPC_CompDerive(model, model_routine_SS, rc=rc)
+    call NUOPC_CompDerive(model, inheritModel, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -64,14 +61,28 @@ module OCN
       return  ! bail out
     
     ! attach specializing method(s)
-    call NUOPC_CompSpecialize(model, specLabel=model_label_SetClock, &
+    call NUOPC_CompSpecialize(model, specLabel=label_SetClock, &
       specRoutine=SetClock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    call NUOPC_CompSpecialize(model, specLabel=model_label_Advance, &
+    call NUOPC_CompSpecialize(model, specLabel=label_Advance, &
       specRoutine=ModelAdvance, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! attach specializing method(s)
+    ! -> NUOPC specializes by default --->>> first need to remove the default
+    call ESMF_MethodRemove(model, label_CheckImport, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call NUOPC_CompSpecialize(model, specLabel=label_CheckImport, &
+      specRoutine=CheckImport, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -91,30 +102,12 @@ module OCN
     
     rc = ESMF_SUCCESS
 
-    !-------------------------------------------------------------------------- 
-    ! importable field: surface_net_downward_shortwave_flux
-    !-------------------------------------------------------------------------- 
-!   call NUOPC_FieldDictionaryAddEntry(standardName='atmosphere_horizontal_streamfunction', canonicalUnits='m^2/s', rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
-
     if (local_verbose) print *, "OCN::InitializeP1:: Calling NUOPC_Advertise for atmosphere_horizontal_streamfunction..."
     call NUOPC_Advertise(importState, StandardName="atmosphere_horizontal_streamfunction", name="psi", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-
-    !-------------------------------------------------------------------------- 
-    ! importable field: air_pressure_at_sea_level
-    !-------------------------------------------------------------------------- 
-!   call NUOPC_FieldDictionaryAddEntry(standardName='air_temperature', canonicalUnits='K', rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
 
     if (local_verbose) print *, "OCN::InitializeP1:: Calling NUOPC_Advertise for air_temperature..."
     call NUOPC_Advertise(importState, StandardName="air_temperature", name="theta", rc=rc)
@@ -123,30 +116,12 @@ module OCN
       file=__FILE__)) &
       return  ! bail out
 
-    !-------------------------------------------------------------------------- 
-    ! exportable field: ocean_barotropic_streamfunction
-    !-------------------------------------------------------------------------- 
-!   call NUOPC_FieldDictionaryAddEntry(standardName='ocean_barotropic_streamfunction', canonicalUnits='m^2/s', rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
-
     if (local_verbose) print *, "OCN::InitializeP1:: Calling NUOPC_Advertise for ocean_barotropic_streamfunction..."
     call NUOPC_Advertise(exportState, StandardName="ocean_barotropic_streamfunction", name="A", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-
-    !-------------------------------------------------------------------------- 
-    ! exportable field: sea_water_temperature
-    !-------------------------------------------------------------------------- 
-!   call NUOPC_FieldDictionaryAddEntry(standardName='sea_water_temperature', canonicalUnits='m^2/s', rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
 
     if (local_verbose) print *, "OCN::InitializeP1:: Calling NUOPC_Advertise for sea_water_temperature..."
     call NUOPC_Advertise(exportState, StandardName="sea_water_temperature", name="T", rc=rc)
@@ -155,7 +130,7 @@ module OCN
       file=__FILE__)) &
       return  ! bail out
 
-  end subroutine
+  end subroutine InitializeP1
   
   !-----------------------------------------------------------------------------
 
@@ -177,9 +152,9 @@ module OCN
     integer :: ndim, si, ei   ! ndim = model dimension, si = start index, ei = end index
 
     logical :: local_verbose = .true.
-    
+
     rc = ESMF_SUCCESS
-    
+
     !--------------------------------------------------------------------------
     ! Call model initialization routines, load initial conditions and assign to farrayP
     !--------------------------------------------------------------------------
@@ -197,11 +172,11 @@ module OCN
       print *, "OCN::InitializeP2::EXITING..."
       stop 'OCN'
     endif
-
+    
     ! Allocate pointer:
     print *, "ndim = ", ndim
     print *, "allocating farrayP(ndim,1)..."
-    allocate(farrayP(ndim,2))    ! user controlled allocation
+    allocate(farrayP(ndim,1))    ! user controlled allocation
     farrayP(1:10,1)  = 1.0d0            ! initialize to some value
     farrayP(11:20,1) = 2.0d0            ! initialize to some value
     farrayP(21:28,1) = 3.0d0            ! initialize to some value
@@ -212,31 +187,13 @@ module OCN
     ! Set up ESMF grid objects
     !--------------------------------------------------------------------------
 
-    ! create a distribution Grid object
-!   distgridOcn = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_nocn/), rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
-
-    ! Create the Grid objects
-!   gridOcn = ESMF_GridCreate(distgrid=distgridOcn, name="ocean_grid", rc=rc)
-    gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_nocn,fdim2/), name="ocean_grid", rc=rc)
+    gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_nocn,1/), name="ocean_grid", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-    ! create a distribution Grid object
-!   distgridAtm = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_natm/), rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
-
-    ! Create the Grid objects
-!   gridAtm = ESMF_GridCreate(distgrid=distgridAtm, name="atmos_grid", rc=rc)
-    gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_natm,fdim2/), name="atmos_grid", rc=rc)
+    gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_natm,1/), name="atmos_grid", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -251,7 +208,7 @@ module OCN
     ei = maooam_natm
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "OCN::InitializeP2:: Calling ESMF_FieldCreate for theta..."
-    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei,:), indexflag=ESMF_INDEX_DELOCAL, name="theta", rc=rc)
+    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL, name="theta", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -269,7 +226,7 @@ module OCN
     ei = maooam_natm + maooam_natm
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "OCN::InitializeP2:: Calling ESMF_FieldCreate for psi..."
-    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei,:), indexflag=ESMF_INDEX_DELOCAL, name="psi", rc=rc)
+    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL, name="psi", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -285,13 +242,13 @@ module OCN
     !--------------------------------------------------------------------------
     ! Get the exportable arrays
     !--------------------------------------------------------------------------
-    
+
     ! exportable array: Ocean temperature
     si = maooam_natm*2 + 1
     ei = maooam_natm*2 + maooam_nocn
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "OCN::InitializeP2:: Calling ESMF_FieldCreate for T..."
-    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei,:), indexflag=ESMF_INDEX_DELOCAL,  name="T", rc=rc)
+    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL,  name="T", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -309,7 +266,7 @@ module OCN
     ei = maooam_natm*2 + maooam_nocn + maooam_nocn
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "OCN::InitializeP2:: Calling ESMF_FieldCreate for A..."
-    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei,:), indexflag=ESMF_INDEX_DELOCAL, name="A", rc=rc)
+    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL, name="A", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -321,11 +278,12 @@ module OCN
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    
+
     if (local_verbose) print *, "OCN::InitializeP2:: finished."
 
-  end subroutine InitializeP2
 
+  end subroutine InitializeP2
+  
   !-----------------------------------------------------------------------------
 
   subroutine SetClock(model, rc)
@@ -336,12 +294,9 @@ module OCN
     type(ESMF_Clock)              :: clock
     type(ESMF_TimeInterval)       :: stabilityTimeStep
 
-    logical :: local_verbose = .true.
-
     rc = ESMF_SUCCESS
     
     ! query the Component for its clock, importState and exportState
-    if (local_verbose) print *, "OCN::SetClock:: Calling NUOPC_ModelGet..."
     call NUOPC_ModelGet(model, modelClock=clock, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
@@ -352,21 +307,16 @@ module OCN
     ! here: parent Clock and stability timeStep determine actual model timeStep
     !TODO: stabilityTimeStep should be read in from configuation
     !TODO: or computed from internal Grid information
-    if (local_verbose) print *, "OCN::SetClock:: Calling ESMF_TimeIntervalSet with m=5..."
     call ESMF_TimeIntervalSet(stabilityTimeStep, m=5, rc=rc) ! 5 minute steps
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-
-    if (local_verbose) print *, "OCN::SetClock:: Calling NUOPC_CompSetClock..."
     call NUOPC_CompSetClock(model, clock, stabilityTimeStep, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-
-    if (local_verbose) print *, "OCN::SetClock:: finished."
     
   end subroutine SetClock
 
@@ -379,7 +329,6 @@ module OCN
     ! local variables
     type(ESMF_Clock)            :: clock
     type(ESMF_State)            :: importState, exportState
-    type(ESMF_Time)             :: startTime
     type(ESMF_Time)             :: currTime
     type(ESMF_TimeInterval)     :: timeStep
     character(len=160)          :: msgString
@@ -393,15 +342,9 @@ module OCN
 
     if (local_verbose) print *, "OCN::ModelAdvance :: commencing..."
 
-#define NUOPC_TRACE__OFF
-#ifdef NUOPC_TRACE
-    call ESMF_TraceRegionEnter("OCN:ModelAdvance")
-#endif
-    
     rc = ESMF_SUCCESS
     
     ! query the Component for its clock, importState and exportState
-    if (local_verbose) print *, "OCN::ModelAdvance:: calling NUOPC_ModelGet..."
     call NUOPC_ModelGet(model, modelClock=clock, importState=importState, &
       exportState=exportState, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -410,6 +353,13 @@ module OCN
       return  ! bail out
 
     ! HERE THE MODEL ADVANCES: currTime -> currTime + timeStep
+    
+    ! Because of the way that the internal Clock was set in SetClock(),
+    ! its timeStep is likely smaller than the parent timeStep. As a consequence
+    ! the time interval covered by a single parent timeStep will result in 
+    ! multiple calls to the ModelAdvance() routine. Every time the currTime
+    ! will come in by one internal timeStep advanced. This goes until the
+    ! stopTime of the internal Clock has been reached.
     
     call ESMF_ClockPrint(clock, options="currTime", &
       preString="------>Advancing OCN from: ", unit=msgString, rc=rc)
@@ -441,9 +391,7 @@ module OCN
       file=__FILE__)) &
       return  ! bail out
 
-    !STEVE: To get time information from the ESMF_Clock:
-    !STEVE: http://www.earthsystemmodeling.org/esmf_releases/non_public/ESMF_1_0_8/ESMF_refdoc/node5.html#SECTION050441000000000000000
-
+    ! START
     if (local_verbose) print *, "OCN::ModelAdvance:: calling ESMF_TimeGet..."
     call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -470,9 +418,102 @@ module OCN
 !   print *, "ModelAdvance:: Post- maooam model run: farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
 
-#ifdef NUOPC_TRACE
-    call ESMF_TraceRegionExit("OCN:ModelAdvance")
-#endif
   end subroutine ModelAdvance
 
-end module
+  !-----------------------------------------------------------------------------
+
+  subroutine CheckImport(model, rc)
+    type(ESMF_GridComp)   :: model
+    integer, intent(out)  :: rc
+    
+    ! local variables
+    type(ESMF_Clock)                :: clock
+    type(ESMF_Time)                 :: currTime, invalidTime
+    type(ESMF_State)                :: importState
+    logical                         :: timeCheck
+    type(ESMF_Field),       pointer :: fieldList(:)
+    integer                         :: i
+    
+    rc = ESMF_SUCCESS
+
+    ! query the Component for its clock and importState
+    call ESMF_GridCompGet(model, clock=clock, importState=importState, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    
+    ! get the current time out of the clock
+    call ESMF_ClockGet(clock, currTime=currTime, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! set up invalid time (by convention)
+    call ESMF_TimeSet(invalidTime, yy=99999999, mm=01, dd=01, &
+      h=00, m=00, s=00, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+      
+    ! Loop through all the field in the importState, and test whether they
+    ! are at invalidTime (ignore them for now), or at currTime. Any other
+    ! time coming in would flag an incompatibility.
+    
+    nullify(fieldList)
+    call NUOPC_GetStateMemberLists(importState, fieldList=fieldList, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    do i=1, size(fieldList)
+      timeCheck = NUOPC_IsAtTime(fieldList(i), invalidTime, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      if (timeCheck) then
+        ! The field is at invalidTime
+
+        ! -> In a real application mark the field with a flag as invalid 
+        !    so the actual model code can act accordingly.
+
+        ! Here for purpose of demonstration just log a message and continue on.
+      
+        call ESMF_LogWrite("OCN: detected import field at invalidTime", &
+          ESMF_LOGMSG_INFO, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+      else
+        ! The field is NOT at invalidTime -> it must then be at currTime or it
+        ! is incompatible!
+      
+        ! check that Fields in the importState show correct timestamp
+        timeCheck = NUOPC_IsAtTime(fieldList(i), currTime, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+        if (.not.timeCheck) then
+          !TODO: introduce and use INCOMPATIBILITY return codes!!!!
+          call ESMF_LogSetError(ESMF_RC_ARG_BAD, &
+            msg="NUOPC INCOMPATIBILITY DETECTED: "//&
+            "Import Field not at current time", &
+            line=__LINE__, file=__FILE__, &
+            rcToReturn=rc)
+          return  ! bail out
+        endif
+      
+      endif
+    enddo
+    
+  end subroutine
+    
+  !-----------------------------------------------------------------------------
+
+end module OCN

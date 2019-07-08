@@ -84,6 +84,8 @@ module MODEL
 !     line=__LINE__, &
 !     file=__FILE__)) &
 !     return  ! bail out
+
+    print *, "SetServices:: Finished SetServices."
     
   end subroutine SetServices
   
@@ -102,22 +104,6 @@ module MODEL
 !   STEVE: didn't work
 
     !--------------------------------------------------------------------------
-    ! exportable field: atmosphere temperature
-    !--------------------------------------------------------------------------
-    call NUOPC_FieldDictionaryAddEntry(standardName='air_temperature', canonicalUnits='K', rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    call NUOPC_Advertise(exportState, &
-      StandardName="air_temperature", name="theta", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    !--------------------------------------------------------------------------
     ! exportable field: atmosphere streamfunction
     !--------------------------------------------------------------------------
     call NUOPC_FieldDictionaryAddEntry(standardName='atmosphere_horizontal_streamfunction', canonicalUnits='m^2/s', rc=rc)
@@ -134,16 +120,16 @@ module MODEL
       return  ! bail out
 
     !--------------------------------------------------------------------------
-    ! exportable field: ocean temperature
+    ! exportable field: atmosphere temperature
     !--------------------------------------------------------------------------
-    call NUOPC_FieldDictionaryAddEntry(standardName='sea_water_temperature', canonicalUnits='m^2/s', rc=rc)
+    call NUOPC_FieldDictionaryAddEntry(standardName='air_temperature', canonicalUnits='K', rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
     call NUOPC_Advertise(exportState, &
-      StandardName="sea_water_temperature", name="T", rc=rc)
+      StandardName="air_temperature", name="theta", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -160,6 +146,22 @@ module MODEL
 
     call NUOPC_Advertise(exportState, &
       StandardName="ocean_barotropic_streamfunction", name="A", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !--------------------------------------------------------------------------
+    ! exportable field: ocean temperature
+    !--------------------------------------------------------------------------
+    call NUOPC_FieldDictionaryAddEntry(standardName='sea_water_temperature', canonicalUnits='m^2/s', rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    call NUOPC_Advertise(exportState, &
+      StandardName="sea_water_temperature", name="T", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -190,8 +192,17 @@ module MODEL
     
     rc = ESMF_SUCCESS
 
+    !--------------------------------------------------------------------------
+    ! Call model initialization routines, load initial conditions and assign to farrayP
+    !--------------------------------------------------------------------------
+    print *, "InitializeP2:: Calling maooam_initialize..."
+    call maooam_initialize()
+    print *, "InitializeP2:: Finished maooam_initialize."
+
+    ! Get model state dimension
+    ndim = 2*maooam_natm+2*maooam_nocn
+
     ! Allocate pointer:
-    ndim = 36 !(temporary, will update in a moment by model initializaiton call)
     print *, "ndim = ", ndim
     print *, "allocating farrayP(ndim)..."
     allocate(farrayP(ndim))    ! user controlled allocation
@@ -200,18 +211,6 @@ module MODEL
     farrayP(21:28) = 3.0d0            ! initialize to some value
     farrayP(29:36) = 4.0d0            ! initialize to some value
     print *, "farrayP = ", farrayP
-    
-
-    !--------------------------------------------------------------------------
-    ! Call model initialization routines, load initial conditions and assign to farrayP
-    !--------------------------------------------------------------------------
-    print *, "InitializeP2:: Calling maooam_initialize..."
-    call maooam_initialize(X0=farrayP)
-    print *, "InitializeP2:: Finished maooam_initialize."
-
-    ! Get model state dimension
-    ndim = 2*maooam_natm+2*maooam_nocn
-    print *, "new ndim = ", ndim
 
     !--------------------------------------------------------------------------
     ! Set up ESMF grid objects
@@ -253,13 +252,13 @@ module MODEL
     si = 1
     ei = maooam_natm
     print *, "si, ei = ", si, ei
-    if (local_verbose) print *, "InitializeP2:: Calling ESMF_FieldCreate for theta..."
-    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="theta", rc=rc)
+    if (local_verbose) print *, "InitializeP2:: Calling ESMF_FieldCreate for psi..."
+    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="psi", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    if (local_verbose) print *, "InitializeP2:: Finished ESMF_FieldCreate for theta."
+    if (local_verbose) print *, "InitializeP2:: Finished ESMF_FieldCreate for psi."
 
     call NUOPC_Realize(exportState, field=field, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -271,13 +270,13 @@ module MODEL
     si = maooam_natm + 1
     ei = maooam_natm + maooam_natm
     print *, "si, ei = ", si, ei
-    if (local_verbose) print *, "InitializeP2:: Calling ESMF_FieldCreate for psi..."
-    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="psi", rc=rc)
+    if (local_verbose) print *, "InitializeP2:: Calling ESMF_FieldCreate for theta..."
+    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="theta", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    if (local_verbose) print *, "InitializeP2:: Finished ESMF_FieldCreate for psi."
+    if (local_verbose) print *, "InitializeP2:: Finished ESMF_FieldCreate for theta."
 
     call NUOPC_Realize(state=exportState, field=field, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -289,13 +288,13 @@ module MODEL
     si = maooam_natm*2 + 1
     ei = maooam_natm*2 + maooam_nocn
     print *, "si, ei = ", si, ei
-    if (local_verbose) print *, "InitializeP2:: Calling ESMF_FieldCreate for T..."
-    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL,  name="T", rc=rc)
+    if (local_verbose) print *, "InitializeP2:: Calling ESMF_FieldCreate for A..."
+    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="A", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    if (local_verbose) print *, "InitializeP2:: Finished ESMF_FieldCreate for T."
+    if (local_verbose) print *, "InitializeP2:: Finished ESMF_FieldCreate for A."
 
     call NUOPC_Realize(state=exportState, field=field, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -307,13 +306,13 @@ module MODEL
     si = maooam_natm*2 + maooam_nocn + 1
     ei = maooam_natm*2 + maooam_nocn + maooam_nocn
     print *, "si, ei = ", si, ei
-    if (local_verbose) print *, "InitializeP2:: Calling ESMF_FieldCreate for A..."
-    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="A", rc=rc)
+    if (local_verbose) print *, "InitializeP2:: Calling ESMF_FieldCreate for T..."
+    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL,  name="T", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    if (local_verbose) print *, "InitializeP2:: Finished ESMF_FieldCreate for A."
+    if (local_verbose) print *, "InitializeP2:: Finished ESMF_FieldCreate for T."
 
     call NUOPC_Realize(state=exportState, field=field, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -346,7 +345,7 @@ module MODEL
 
     type(ESMF_Array) :: array
     real(kind=8) :: X0,Xf
-    integer :: seconds
+    integer(kind=8) :: seconds
     real(kind=8) :: t,dt
     integer :: Nt
 
@@ -406,12 +405,12 @@ module MODEL
     !STEVE: To get time information from the ESMF_Clock:
     !STEVE: http://www.earthsystemmodeling.org/esmf_releases/non_public/ESMF_1_0_8/ESMF_refdoc/node5.html#SECTION050441000000000000000
 
-    call ESMF_TimeGet(currTime, s=seconds, rc=rc)
+    call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
     t = real(seconds)
-    call ESMF_TimeIntervalGet(timeStep, s=seconds, rc=rc)
+    call ESMF_TimeIntervalGet(timeStep, s_i8=seconds, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -419,11 +418,11 @@ module MODEL
     Nt = 1 !STEVE: just run one step of dt
 
     !STEVE: I'm assuming all I need to do is update the data array referenced by the pointer that is registered with the state object
-    print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
-    print *, farrayP            ! print PET-local farrayA directly
+!   print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
+!   print *, farrayP            ! print PET-local farrayA directly
     call maooam_run(X=farrayP,t=t,dt=dt,Nt=Nt) !,component)
-    print *, "ModelAdvance:: Post- maooam model run: farrayP = "
-    print *, farrayP            ! print PET-local farrayA directly
+!   print *, "ModelAdvance:: Post- maooam model run: farrayP = "
+!   print *, farrayP            ! print PET-local farrayA directly
 
 
     if (local_verbose) print *, "ModelAdvance:: finished."

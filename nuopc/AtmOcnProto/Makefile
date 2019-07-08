@@ -43,8 +43,9 @@ include $(ESMFMKFILE)
 
 
 # -----------------------------------------------------------------------------
+MAOOAM_LIB=-L./ -lmaooam
 esmApp: esmApp.o esm.o atm.o ocn.o
-	$(ESMF_F90LINKER) $(ESMF_F90LINKOPTS) $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) -o $@ $^ $(ESMF_F90ESMFLINKLIBS)
+	$(ESMF_F90LINKER) $(ESMF_F90LINKOPTS) $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) -o $@ $^ $(ESMF_F90ESMFLINKLIBS) $(MAOOAM_LIB)
 
 # module dependencies:
 esmApp.o: esm.o
