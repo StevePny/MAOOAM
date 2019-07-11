@@ -27,8 +27,8 @@ module driver
   private
   
   ! private module data --> ONLY PARAMETERS
-  integer, parameter            :: stepCount = 5
-  real(ESMF_KIND_R8), parameter :: stepTime  = 30.D0  ! step time [s]
+  integer, parameter            :: stepCount = 1
+  real(ESMF_KIND_R8), parameter :: stepTime  = 3600.D0  ! step time [s]
                                                       ! should be parent step
 
   public SetServices

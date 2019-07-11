@@ -18,7 +18,8 @@ module ESM
   use NUOPC
   use NUOPC_Driver, &
     driver_routine_SS             => SetServices, &
-    driver_label_SetModelServices => label_SetModelServices
+    driver_label_SetModelServices => label_SetModelServices, &
+    driver_label_ModifyCplLists   => label_ModifyCplLists
   
   use ATM, only: atmSS => SetServices
   use OCN, only: ocnSS => SetServices
@@ -59,6 +60,12 @@ module ESM
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+    call NUOPC_CompSpecialize(driver, specLabel=driver_label_ModifyCplLists, &
+      specRoutine=ModifyCplLists, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
     
     ! set driver verbosity
     call NUOPC_CompAttributeSet(driver, name="Verbosity", value="1", rc=rc)
@@ -87,6 +94,9 @@ module ESM
 
     logical :: local_verbose = .true.
     character(12) :: method
+    character(ESMF_MAXSTR) :: test_cplList
+    character(ESMF_MAXSTR), pointer :: ptr_cplList
+    integer :: test_verbosity
 
     rc = ESMF_SUCCESS
     
@@ -136,8 +146,20 @@ module ESM
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-      
-!   call NUOPC_CompAttributeSet(connector, name="ConnectionOptions", value=":remapmethod=redist", rc=rc)
+
+!   call NUOPC_CompAttributeSet(comp=connector, name="ConnectionOptions", value=":remapmethod=redist", rc=rc)
+!   call NUOPC_CompAttributeSet(comp=connector, name="cplList", value=":remapmethod=redist", rc=rc)
+!   call NUOPC_CompAttributeGet(comp=connector, name="cplList", value=test_cplList, rc=rc)
+!   print *, "cplList (NUOPC_CompAttributeGet) = "
+!   print *, test_cplList
+!   call NUOPC_CompAttributeGet(comp=connector, name="Verbosity", value=test_verbosity, rc=rc)
+!   print *, "Verbosity = "
+!   print *, test_verbosity
+!   call NUOPC_ConnectorGet(connector=connector, srcFields, dstFields, rh, state, CplSet, cplSetList, srcVM, dstVM, rc)
+!   call NUOPC_ConnectorGet(connector=connector, cplSetList=ptr_cplList, rc=rc)
+!   call NUOPC_ConnectorSet(connector=connector, srcFields, dstFields, rh, state, CplSet, srcVM, dstVM, rc)
+!   print *, "cplList (NUOPC_ConnectorGet) = "
+!   print *, ptr_cplList
 
     ! SetServices for ocn2atm
     if (local_verbose) print *, "ESM::SetModelServices:: calling NUOPC_DriverAddComp for OCN to ATM..."
@@ -153,30 +175,30 @@ module ESM
       file=__FILE__)) &
       return  ! bail out
 
+!   call NUOPC_CompAttributeSet(connector, name="cplList", value=":remapmethod=redist", rc=rc)
 !   call NUOPC_CompAttributeSet(connector, name="ConnectionOptions", value=":remapmethod=redist", rc=rc)
    
       
 #endif
       
     ! set the driver clock
-    if (local_verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeIntervalSet for m=15..."
-    call ESMF_TimeIntervalSet(timeStep, m=15, rc=rc) ! 15 minute steps
+!   call ESMF_TimeIntervalSet(timeStep, m=15, rc=rc) ! 15 minute steps
+    if (local_verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeIntervalSet for s=1..."
+    call ESMF_TimeIntervalSet(timeStep, s=1, rc=rc) ! 15 minute steps
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
     if (local_verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeSet start yy=2010, mm=6, dd=1, h=0, m=0..."
-    call ESMF_TimeSet(startTime, yy=2010, mm=6, dd=1, h=0, m=0, &
-      calkindflag=ESMF_CALKIND_GREGORIAN, rc=rc)
+    call ESMF_TimeSet(startTime, yy=2010, mm=6, dd=1, h=0, m=0, calkindflag=ESMF_CALKIND_GREGORIAN, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-    if (local_verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeSet stop yy=2010, mm=6, dd=6, h=0, m=0..."
-    call ESMF_TimeSet(stopTime, yy=2010, mm=6, dd=1, h=6, m=0, &
-      calkindflag=ESMF_CALKIND_GREGORIAN, rc=rc)
+    if (local_verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeSet stop yy=2010, mm=6, dd=1, h=1, m=0..."
+    call ESMF_TimeSet(stopTime, yy=2010, mm=6, dd=1, h=1, m=0, calkindflag=ESMF_CALKIND_GREGORIAN, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -197,6 +219,93 @@ module ESM
       file=__FILE__)) &
       return  ! bail out
       
-  end subroutine
+  end subroutine SetModelServices
 
-end module
+  !-----------------------------------------------------------------------------
+
+  subroutine ModifyCplLists(driver, rc)
+    type(ESMF_GridComp)  :: driver
+    integer, intent(out) :: rc
+
+    ! local variables
+    character(len=160)              :: msg
+    type(ESMF_CplComp), pointer     :: connectorList(:)
+    integer                         :: i, j, cplListSize
+    character(len=160), allocatable :: cplList(:)
+    character(len=160)              :: tempString
+
+    rc = ESMF_SUCCESS
+
+    call ESMF_LogWrite("Driver is in ModifyCplLists()", ESMF_LOGMSG_INFO, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    nullify(connectorList)
+    call NUOPC_DriverGetComp(driver, compList=connectorList, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    write (msg,*) "Found ", size(connectorList), " Connectors."// &
+      " Modifying CplList Attribute...."
+    call ESMF_LogWrite(trim(msg), ESMF_LOGMSG_INFO, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    do i=1, size(connectorList)
+      ! query the cplList for connector i
+      call NUOPC_CompAttributeGet(connectorList(i), name="CplList", itemCount=cplListSize, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      if (cplListSize>0) then
+        allocate(cplList(cplListSize))
+        call NUOPC_CompAttributeGet(connectorList(i), name="CplList", valueList=cplList, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+        ! go through all of the entries in the cplList
+        do j=1, cplListSize
+          if (trim(cplList(j))=="ocean_barotropic_streamfunction") then
+            ! switch remapping to redist, b/c spectral model
+            cplList(j) = trim(cplList(j))//":REMAPMETHOD=redist"
+          elseif (trim(cplList(j))=="sea_water_temperature") then
+            ! switch remapping to redist, b/c spectral model
+            cplList(j) = trim(cplList(j))//":REMAPMETHOD=redist"
+          elseif (trim(cplList(j))=="atmosphere_horizontal_streamfunction") then
+            ! switch remapping to redist, b/c spectral model
+            cplList(j) = trim(cplList(j))//":REMAPMETHOD=redist"
+          elseif (trim(cplList(j))=="air_temperature") then
+            ! switch remapping to redist, b/c spectral model
+            cplList(j) = trim(cplList(j))//":REMAPMETHOD=redist"
+          else
+            print *, "ESM::ModifyCplLists:: Unsupported option: cplList(j) = ", cplList(j)
+            print *, "ESM::ModifyCplLists:: changing to REMAPMETHOD=redist."
+            ! switch remapping to redist, b/c spectral model
+            cplList(j) = trim(cplList(j))//":REMAPMETHOD=redist"
+          endif
+        enddo
+        ! store the modified cplList in CplList attribute of connector i
+        call NUOPC_CompAttributeSet(connectorList(i), name="CplList", valueList=cplList, rc=rc)
+        if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+          line=__LINE__, &
+          file=__FILE__)) &
+          return  ! bail out
+        deallocate(cplList)
+      endif
+    enddo
+
+    deallocate(connectorList)
+
+  end subroutine ModifyCplLists
+
+  !-----------------------------------------------------------------------------
+
+end module ESM

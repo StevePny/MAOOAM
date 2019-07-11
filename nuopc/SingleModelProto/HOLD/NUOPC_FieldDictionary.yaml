@@ -1,0 +1,14 @@
+field_dictionary:
+   version_number: 0.0.0
+   institution: CIRES / NOAA PSD
+   source: Penny, 2019
+   description: Dictionary for shared coupling fields in the MAOOAM coupled QG model
+   entries:
+     - standard_name: air_temperature
+       canonical_units: K
+     - standard_name: atmosphere_horizontal_streamfunction
+       canonical_units: m^2/s
+     - standard_name: sea_water_temperature
+       canonical_units: K
+     - standard_name: ocean_barotropic_streamfunction
+       canonical_units: m^2/s

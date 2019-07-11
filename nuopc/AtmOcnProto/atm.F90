@@ -26,7 +26,7 @@ module ATM
   
   private
 
-  real(ESMF_KIND_R8), pointer :: farrayP(:,:)   ! Fortran array pointer
+  real(ESMF_KIND_R8), pointer :: farrayP(:)   ! Fortran array pointer
   integer, parameter :: fdim2 = 2
   
   public SetServices
@@ -61,6 +61,13 @@ module ATM
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+    !STEVE: testing IPDv05p3
+!   call NUOPC_CompSetEntryPoint(model, ESMF_METHOD_INITIALIZE, &
+!     phaseLabelList=(/"IPDv05p3"/), userRoutine=InitializeP3, rc=rc)
+!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!     line=__LINE__, &
+!     file=__FILE__)) &
     
     ! attach specializing method(s)
     call NUOPC_CompSpecialize(model, specLabel=model_label_Advance, &
@@ -190,12 +197,12 @@ module ATM
 
     ! Allocate pointer:
     print *, "ndim = ", ndim
-    print *, "allocating farrayP(ndim,1)..."
-    allocate(farrayP(ndim,2))    ! user controlled allocation
-    farrayP(1:10,1)  = 1.0d0            ! initialize to some value
-    farrayP(11:20,1) = 2.0d0            ! initialize to some value
-    farrayP(21:28,1) = 3.0d0            ! initialize to some value
-    farrayP(29:36,1) = 4.0d0            ! initialize to some value
+    print *, "allocating farrayP(ndim)..."
+    allocate(farrayP(ndim))    ! user controlled allocation
+    farrayP(1:10)  = 1.0d0            ! initialize to some value
+    farrayP(11:20) = 2.0d0            ! initialize to some value
+    farrayP(21:28) = 3.0d0            ! initialize to some value
+    farrayP(29:36) = 4.0d0            ! initialize to some value
     print *, "farrayP = ", farrayP
 
     !--------------------------------------------------------------------------
@@ -203,42 +210,37 @@ module ATM
     !--------------------------------------------------------------------------
 
     ! create a distribution Grid object
-!   distgridAtm = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_natm/), rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
-
-    ! create a Grid object for Fields
-!   gridIn = ESMF_GridCreateNoPeriDimUfrm(maxIndex=(/20, 200/), &
-!     minCornerCoord=(/10._ESMF_KIND_R8, 20._ESMF_KIND_R8/), &
-!     maxCornerCoord=(/100._ESMF_KIND_R8, 200._ESMF_KIND_R8/), &
-!     coordSys=ESMF_COORDSYS_CART, staggerLocList=(/ESMF_STAGGERLOC_CENTER/), &
-!     rc=rc)
-
+    distgridAtm = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_natm/), rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
 
     ! Create the Grid objects
-!   gridAtm = ESMF_GridCreate(distgrid=distgridAtm, name="atmos_grid", rc=rc)
-    gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_natm,fdim2/), name="atmos_grid", rc=rc)
+    gridAtm = ESMF_GridCreate(distgrid=distgridAtm, name="atmos_grid", rc=rc)
+!   gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1/), maxIndex=(/maooam_natm/), name="atmos_grid", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
     ! create a distribution Grid object
-!   distgridOcn = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_nocn/), rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
-
-    ! Create the Grid objects
-!   gridOcn = ESMF_GridCreate(distgrid=distgridOcn, name="ocean_grid", rc=rc)
-    gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_nocn,fdim2/), name="ocean_grid", rc=rc)
+    distgridOcn = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_nocn/), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+    ! Create the Grid objects
+    gridOcn = ESMF_GridCreate(distgrid=distgridOcn, name="ocean_grid", rc=rc)
+!   gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1), maxIndex=(/maooam_nocn/), name="ocean_grid", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+!   call ESMF_GridAddCoord(gridAtm, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
+!   call ESMF_GridAddCoord(gridOcn, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
 
     !--------------------------------------------------------------------------
     ! Get the importable arrays
@@ -249,7 +251,7 @@ module ATM
     ei = maooam_natm*2 + maooam_nocn
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for T..."
-    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei,:), indexflag=ESMF_INDEX_DELOCAL,  name="T", rc=rc)
+    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL,  name="T", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -267,7 +269,7 @@ module ATM
     ei = maooam_natm*2 + maooam_nocn + maooam_nocn
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for A..."
-    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei,:), indexflag=ESMF_INDEX_DELOCAL, name="A", rc=rc)
+    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="A", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -289,7 +291,7 @@ module ATM
     ei = maooam_natm
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for theta..."
-    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei,:), indexflag=ESMF_INDEX_DELOCAL, name="theta", rc=rc)
+    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="theta", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -307,7 +309,7 @@ module ATM
     ei = maooam_natm + maooam_natm
     print *, "si, ei = ", si, ei
     if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for psi..."
-    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei,:), indexflag=ESMF_INDEX_DELOCAL, name="psi", rc=rc)
+    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei), indexflag=ESMF_INDEX_DELOCAL, name="psi", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -419,10 +421,10 @@ module ATM
     !STEVE: I'm assuming all I need to do is update the data array referenced by the pointer that is registered with the state object
 !   print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
-    allocate(X(36))
-    X = farrayP(:,1)
-    call maooam_atmos_run(X=X,t=t,dt=dt,Nt=Nt) !,component)
-    farrayP(:,1) = X
+!   allocate(X(36))
+!   X = farrayP(:,1)
+    call maooam_atmos_run(X=farrayP,t=t,dt=dt,Nt=Nt) !,component)
+!   farrayP(:,1) = X
 !   print *, "ModelAdvance:: Post- maooam model run: farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
 

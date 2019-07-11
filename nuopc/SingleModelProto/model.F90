@@ -230,6 +230,12 @@ module MODEL
       file=__FILE__)) &
       return  ! bail out
 
+!   gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1/), maxIndex=(/maooam_natm/), name="atmos_grid", rc=rc)
+!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!     line=__LINE__, &
+!     file=__FILE__)) &
+!     return  ! bail out
+
     ! create a distribution Grid object
     distgridOcn = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_nocn/), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -243,6 +249,12 @@ module MODEL
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+!   gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1/), maxIndex=(/maooam_nocn/), name="ocean_grid", rc=rc)
+!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!     line=__LINE__, &
+!     file=__FILE__)) &
+!     return  ! bail out
 
     !--------------------------------------------------------------------------
     ! Create Field objects and 'realize' (i.e. assign to exportState)

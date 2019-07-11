@@ -18,7 +18,7 @@ MODULE stat
 ! PRIVATE
   PUBLIC !STEVE
   
-  INTEGER :: i=0 !< Number of stats accumulated
+  INTEGER :: stat_i=0 !< Number of stats accumulated
   
   ! Vectors holding the stats
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: m       !< Vector storing the inline mean
@@ -51,8 +51,8 @@ MODULE stat
     SUBROUTINE acc(x)
       IMPLICIT NONE
       REAL(KIND=8), DIMENSION(0:ndim), INTENT(IN) :: x
-      i=i+1
-      mprev=m+(x-m)/i
+      stat_i=stat_i+1
+      mprev=m+(x-m)/stat_i
       mtmp=mprev
       mprev=m
       m=mtmp
@@ -68,13 +68,13 @@ MODULE stat
     !> Function returning the variance
     FUNCTION var()
       REAL(KIND=8), DIMENSION(0:ndim) :: var
-      var=v/(i-1)
+      var=v/(stat_i-1)
     END FUNCTION var
 
     !> Function returning the number of data accumulated
     FUNCTION iter()
       INTEGER :: iter
-      iter=i
+      iter=stat_i
     END FUNCTION iter
 
     !> Routine resetting the accumulators
@@ -82,7 +82,7 @@ MODULE stat
       m=0.D0
       mprev=0.D0
       v=0.D0
-      i=0
+      stat_i=0
     END SUBROUTINE reset
       
 

@@ -1,19 +1,204 @@
-20190707 022334.390 INFO             PET0 Running with ESMF Version 7.1.0r
-20190707 022334.390 INFO             PET0 esmApp STARTING
-20190707 022334.391 INFO             PET0 esm - Creating model component ATM without petList.
-20190707 022334.392 INFO             PET0 esm - Creating model component OCN without petList.
-20190707 022334.393 INFO             PET0 esm - Creating connector component ATM-TO-OCN without petList.
-20190707 022334.393 INFO             PET0 esm - Creating connector component OCN-TO-ATM without petList.
-20190707 022334.408 ERROR            PET0 ESMCI_GridToMesh.C:116 GridToMesh() Invalid argument  - - Grid being used in Regrid call does not contain coordinates at appropriate staggerloc
-20190707 022334.408 ERROR            PET0 ESMCI_GridToMesh.C:787 GridToMesh() Invalid argument  - Internal subroutine call returned Error
-20190707 022334.408 ERROR            PET0 ESMCI_MeshCap.C:322 MeshCap::GridToMesh() Invalid argument  - Internal subroutine call returned Error
-20190707 022334.408 ERROR            PET0 ESMCI_GridUtil_F.C:257 c_esmc_gridtomesh() Invalid argument  - Internal subroutine call returned Error
-20190707 022334.408 ERROR            PET0 ESMF_GridUtil.F90:447 ESMF_GridToMesh() Invalid argument  - Internal subroutine call returned Error
-20190707 022334.408 ERROR            PET0 ESMF_FieldRegrid.F90:997 ESMF_FieldRegridStoreNX Invalid argument  - Internal subroutine call returned Error
-20190707 022334.408 ERROR            PET0 ATM-TO-OCN:src/addon/NUOPC/src/NUOPC_Connector.F90:5056 Invalid argument  - Passing error in return code
-20190707 022334.408 ERROR            PET0 ATM-TO-OCN:src/addon/NUOPC/src/NUOPC_Connector.F90:3424 Invalid argument  - Passing error in return code
-20190707 022334.408 ERROR            PET0 esm:src/addon/NUOPC/src/NUOPC_Driver.F90:1622 Invalid argument  - Phase 'IPDv05p6b' Initialize for connectorComp 1 -> 2: ATM-TO-OCN did not return ESMF_SUCCESS
-20190707 022334.408 ERROR            PET0 esm:src/addon/NUOPC/src/NUOPC_Driver.F90:1296 Invalid argument  - Passing error in return code
-20190707 022334.408 ERROR            PET0 esm:src/addon/NUOPC/src/NUOPC_Driver.F90:313 Invalid argument  - Passing error in return code
-20190707 022334.408 ERROR            PET0 esmApp.F90:71 Invalid argument  - Passing error in return code
-20190707 022334.408 INFO             PET0 Finalizing ESMF
+20190711 110907.618 INFO             PET0 Running with ESMF Version 7.1.0r
+20190711 110907.618 INFO             PET0 esmApp STARTING
+20190711 110907.619 INFO             PET0 esm - Creating model component ATM without petList.
+20190711 110907.620 INFO             PET0 esm - Creating model component OCN without petList.
+20190711 110907.620 INFO             PET0 esm - Creating connector component ATM-TO-OCN without petList.
+20190711 110907.621 INFO             PET0 esm - Creating connector component OCN-TO-ATM without petList.
+20190711 110907.622 INFO             PET0 ATM-TO-OCN: InitializeP0 intro.
+20190711 110907.622 INFO             PET0 ATM-TO-OCN: InitializeP0 extro.
+20190711 110907.622 INFO             PET0 OCN-TO-ATM: InitializeP0 intro.
+20190711 110907.622 INFO             PET0 OCN-TO-ATM: InitializeP0 extro.
+20190711 110907.624 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p1 intro.
+20190711 110907.624 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p1 extro.
+20190711 110907.624 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p1 intro.
+20190711 110907.624 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p1 extro.
+20190711 110907.624 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2a intro.
+20190711 110907.624 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2a extro.
+20190711 110907.624 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2a intro.
+20190711 110907.625 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2a extro.
+20190711 110907.625 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2b intro.
+20190711 110907.625 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2b extro.
+20190711 110907.625 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2b intro.
+20190711 110907.625 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2b extro.
+20190711 110907.625 INFO             PET0 Driver is in ModifyCplLists()
+20190711 110907.625 INFO             PET0  Found            2  Connectors. Modifying CplList Attribute....
+20190711 110907.625 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p3 intro.
+20190711 110907.625 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p3 extro.
+20190711 110907.625 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p3 intro.
+20190711 110907.625 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p3 extro.
+20190711 110907.631 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p4 intro.
+20190711 110907.631 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p4 extro.
+20190711 110907.631 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p4 intro.
+20190711 110907.632 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p4 extro.
+20190711 110907.632 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p5 intro.
+20190711 110907.632 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p5 extro.
+20190711 110907.632 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p5 intro.
+20190711 110907.632 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p5 extro.
+20190711 110907.632 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6a intro.
+20190711 110907.632 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6a extro.
+20190711 110907.632 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6a intro.
+20190711 110907.632 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6a extro.
+20190711 110907.633 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6b intro.
+20190711 110907.635 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6b extro.
+20190711 110907.635 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6b intro.
+20190711 110907.635 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6b extro.
+20190711 110907.636 INFO             PET0 >>>esm entered Run (phase=) with current time: 2010  6  1  0  0  0   0
+20190711 110907.636 INFO             PET0 ATM-TO-OCN: Run intro.
+20190711 110907.636 INFO             PET0 ATM-TO-OCN: Run extro.
+20190711 110907.636 INFO             PET0 OCN-TO-ATM: Run intro.
+20190711 110907.636 INFO             PET0 OCN-TO-ATM: Run extro.
+20190711 110907.636 INFO             PET0 >>>ATM entered Run (phase=RunPhase1) with current time: 2010  6  1  0  0  0   0
+20190711 110907.636 INFO             PET0 ------>Advancing ATM from: 2010  6  1  0  0  0   0
+20190711 111914.749 INFO             PET0 Running with ESMF Version 7.1.0r
+20190711 111914.749 INFO             PET0 esmApp STARTING
+20190711 111914.750 INFO             PET0 esm - Creating model component ATM without petList.
+20190711 111914.750 INFO             PET0 esm - Creating model component OCN without petList.
+20190711 111914.751 INFO             PET0 esm - Creating connector component ATM-TO-OCN without petList.
+20190711 111914.751 INFO             PET0 esm - Creating connector component OCN-TO-ATM without petList.
+20190711 111914.753 INFO             PET0 ATM-TO-OCN: InitializeP0 intro.
+20190711 111914.753 INFO             PET0 ATM-TO-OCN: InitializeP0 extro.
+20190711 111914.753 INFO             PET0 OCN-TO-ATM: InitializeP0 intro.
+20190711 111914.753 INFO             PET0 OCN-TO-ATM: InitializeP0 extro.
+20190711 111914.755 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p1 intro.
+20190711 111914.755 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p1 extro.
+20190711 111914.755 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p1 intro.
+20190711 111914.755 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p1 extro.
+20190711 111914.755 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2a intro.
+20190711 111914.756 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2a extro.
+20190711 111914.756 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2a intro.
+20190711 111914.756 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2a extro.
+20190711 111914.756 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2b intro.
+20190711 111914.756 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2b extro.
+20190711 111914.756 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2b intro.
+20190711 111914.756 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2b extro.
+20190711 111914.756 INFO             PET0 Driver is in ModifyCplLists()
+20190711 111914.756 INFO             PET0  Found            2  Connectors. Modifying CplList Attribute....
+20190711 111914.756 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p3 intro.
+20190711 111914.756 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p3 extro.
+20190711 111914.756 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p3 intro.
+20190711 111914.756 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p3 extro.
+20190711 111914.763 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p4 intro.
+20190711 111914.763 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p4 extro.
+20190711 111914.764 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p4 intro.
+20190711 111914.764 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p4 extro.
+20190711 111914.764 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p5 intro.
+20190711 111914.764 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p5 extro.
+20190711 111914.764 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p5 intro.
+20190711 111914.764 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p5 extro.
+20190711 111914.764 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6a intro.
+20190711 111914.764 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6a extro.
+20190711 111914.764 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6a intro.
+20190711 111914.764 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6a extro.
+20190711 111914.764 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6b intro.
+20190711 111914.765 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6b extro.
+20190711 111914.765 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6b intro.
+20190711 111914.765 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6b extro.
+20190711 111914.766 INFO             PET0 >>>esm entered Run (phase=) with current time: 2010  6  1  0  0  0   0
+20190711 111914.766 INFO             PET0 ATM-TO-OCN: Run intro.
+20190711 111914.766 INFO             PET0 ATM-TO-OCN: Run extro.
+20190711 111914.766 INFO             PET0 OCN-TO-ATM: Run intro.
+20190711 111914.766 INFO             PET0 OCN-TO-ATM: Run extro.
+20190711 111914.766 INFO             PET0 >>>ATM entered Run (phase=RunPhase1) with current time: 2010  6  1  0  0  0   0
+20190711 111914.767 INFO             PET0 ------>Advancing ATM from: 2010  6  1  0  0  0   0
+20190711 111951.365 INFO             PET0 Running with ESMF Version 7.1.0r
+20190711 111951.365 INFO             PET0 esmApp STARTING
+20190711 111951.366 INFO             PET0 esm - Creating model component ATM without petList.
+20190711 111951.367 INFO             PET0 esm - Creating model component OCN without petList.
+20190711 111951.367 INFO             PET0 esm - Creating connector component ATM-TO-OCN without petList.
+20190711 111951.368 INFO             PET0 esm - Creating connector component OCN-TO-ATM without petList.
+20190711 111951.369 INFO             PET0 ATM-TO-OCN: InitializeP0 intro.
+20190711 111951.369 INFO             PET0 ATM-TO-OCN: InitializeP0 extro.
+20190711 111951.369 INFO             PET0 OCN-TO-ATM: InitializeP0 intro.
+20190711 111951.369 INFO             PET0 OCN-TO-ATM: InitializeP0 extro.
+20190711 111951.371 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p1 intro.
+20190711 111951.371 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p1 extro.
+20190711 111951.372 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p1 intro.
+20190711 111951.372 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p1 extro.
+20190711 111951.372 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2a intro.
+20190711 111951.372 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2a extro.
+20190711 111951.372 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2a intro.
+20190711 111951.372 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2a extro.
+20190711 111951.372 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2b intro.
+20190711 111951.372 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2b extro.
+20190711 111951.372 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2b intro.
+20190711 111951.372 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2b extro.
+20190711 111951.372 INFO             PET0 Driver is in ModifyCplLists()
+20190711 111951.372 INFO             PET0  Found            2  Connectors. Modifying CplList Attribute....
+20190711 111951.372 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p3 intro.
+20190711 111951.372 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p3 extro.
+20190711 111951.372 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p3 intro.
+20190711 111951.372 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p3 extro.
+20190711 111951.381 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p4 intro.
+20190711 111951.381 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p4 extro.
+20190711 111951.382 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p4 intro.
+20190711 111951.382 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p4 extro.
+20190711 111951.382 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p5 intro.
+20190711 111951.382 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p5 extro.
+20190711 111951.382 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p5 intro.
+20190711 111951.382 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p5 extro.
+20190711 111951.382 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6a intro.
+20190711 111951.382 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6a extro.
+20190711 111951.382 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6a intro.
+20190711 111951.382 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6a extro.
+20190711 111951.382 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6b intro.
+20190711 111951.383 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6b extro.
+20190711 111951.383 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6b intro.
+20190711 111951.383 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6b extro.
+20190711 111951.384 INFO             PET0 >>>esm entered Run (phase=) with current time: 2010  6  1  0  0  0   0
+20190711 111951.384 INFO             PET0 ATM-TO-OCN: Run intro.
+20190711 111951.384 INFO             PET0 ATM-TO-OCN: Run extro.
+20190711 111951.384 INFO             PET0 OCN-TO-ATM: Run intro.
+20190711 111951.384 INFO             PET0 OCN-TO-ATM: Run extro.
+20190711 111951.384 INFO             PET0 >>>ATM entered Run (phase=RunPhase1) with current time: 2010  6  1  0  0  0   0
+20190711 111951.384 INFO             PET0 ------>Advancing ATM from: 2010  6  1  0  0  0   0
+20190711 113221.346 INFO             PET0 Running with ESMF Version 7.1.0r
+20190711 113221.346 INFO             PET0 esmApp STARTING
+20190711 113221.347 INFO             PET0 esm - Creating model component ATM without petList.
+20190711 113221.348 INFO             PET0 esm - Creating model component OCN without petList.
+20190711 113221.349 INFO             PET0 esm - Creating connector component ATM-TO-OCN without petList.
+20190711 113221.349 INFO             PET0 esm - Creating connector component OCN-TO-ATM without petList.
+20190711 113221.350 INFO             PET0 ATM-TO-OCN: InitializeP0 intro.
+20190711 113221.350 INFO             PET0 ATM-TO-OCN: InitializeP0 extro.
+20190711 113221.350 INFO             PET0 OCN-TO-ATM: InitializeP0 intro.
+20190711 113221.350 INFO             PET0 OCN-TO-ATM: InitializeP0 extro.
+20190711 113221.352 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p1 intro.
+20190711 113221.352 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p1 extro.
+20190711 113221.353 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p1 intro.
+20190711 113221.353 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p1 extro.
+20190711 113221.353 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2a intro.
+20190711 113221.353 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2a extro.
+20190711 113221.353 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2a intro.
+20190711 113221.353 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2a extro.
+20190711 113221.353 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2b intro.
+20190711 113221.353 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p2b extro.
+20190711 113221.353 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2b intro.
+20190711 113221.353 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p2b extro.
+20190711 113221.353 INFO             PET0 Driver is in ModifyCplLists()
+20190711 113221.353 INFO             PET0  Found            2  Connectors. Modifying CplList Attribute....
+20190711 113221.353 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p3 intro.
+20190711 113221.353 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p3 extro.
+20190711 113221.353 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p3 intro.
+20190711 113221.354 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p3 extro.
+20190711 113221.360 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p4 intro.
+20190711 113221.360 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p4 extro.
+20190711 113221.360 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p4 intro.
+20190711 113221.360 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p4 extro.
+20190711 113221.360 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p5 intro.
+20190711 113221.360 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p5 extro.
+20190711 113221.360 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p5 intro.
+20190711 113221.361 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p5 extro.
+20190711 113221.361 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6a intro.
+20190711 113221.361 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6a extro.
+20190711 113221.361 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6a intro.
+20190711 113221.361 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6a extro.
+20190711 113221.361 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6b intro.
+20190711 113221.361 INFO             PET0 ATM-TO-OCN: InitializeIPDv05p6b extro.
+20190711 113221.361 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6b intro.
+20190711 113221.362 INFO             PET0 OCN-TO-ATM: InitializeIPDv05p6b extro.
+20190711 113221.363 INFO             PET0 >>>esm entered Run (phase=) with current time: 2010  6  1  0  0  0   0
+20190711 113221.363 INFO             PET0 ATM-TO-OCN: Run intro.
+20190711 113221.363 INFO             PET0 ATM-TO-OCN: Run extro.
+20190711 113221.363 INFO             PET0 OCN-TO-ATM: Run intro.
+20190711 113221.363 INFO             PET0 OCN-TO-ATM: Run extro.
+20190711 113221.363 INFO             PET0 >>>ATM entered Run (phase=RunPhase1) with current time: 2010  6  1  0  0  0   0
+20190711 113221.363 INFO             PET0 ------>Advancing ATM from: 2010  6  1  0  0  0   0
