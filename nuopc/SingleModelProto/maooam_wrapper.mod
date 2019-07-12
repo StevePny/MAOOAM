@@ -1,1 +1,0 @@
-../../fortran_split/maooam_wrapper.mod

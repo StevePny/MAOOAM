@@ -43,7 +43,7 @@ include $(ESMFMKFILE)
 
 
 # -----------------------------------------------------------------------------
-MAOOAM_LIB=-L./ -lmaooam
+MAOOAM_LIB=-L./ -lmaooam_coupled
 mainApp: mainApp.o driver.o model.o
 	$(ESMF_F90LINKER) $(ESMF_F90LINKOPTS) $(ESMF_F90LINKPATHS) $(ESMF_F90LINKRPATHS) -o $@ $^ $(ESMF_F90ESMFLINKLIBS) $(MAOOAM_LIB)
 

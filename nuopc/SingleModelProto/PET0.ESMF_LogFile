@@ -1,7 +1,137 @@
-20190711 112558.859 INFO             PET0 Running with ESMF Version 7.1.0r
-20190711 112558.859 INFO             PET0 mainApp STARTING
-20190711 112558.863 INFO             PET0 driver - Creating model component MODEL without petList.
-20190711 112558.870 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0  0   0
-20190711 112558.870 INFO             PET0 ---------------------> to:    0  1  1  1  0  0   0
-20190711 112558.873 INFO             PET0 mainApp FINISHED
-20190711 112558.873 INFO             PET0 Finalizing ESMF
+20190712 192210.197 INFO             PET0 Running with ESMF Version 7.1.0r
+20190712 192210.198 INFO             PET0 mainApp STARTING
+20190712 192210.199 INFO             PET0 driver - Creating model component MODEL without petList.
+20190712 192210.207 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0  0   0
+20190712 192210.207 INFO             PET0 ---------------------> to:    0  1  1  0  0 10   0
+20190712 192210.213 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 10   0
+20190712 192210.213 INFO             PET0 ---------------------> to:    0  1  1  0  0 20   0
+20190712 192210.214 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 20   0
+20190712 192210.214 INFO             PET0 ---------------------> to:    0  1  1  0  0 30   0
+20190712 192210.215 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 30   0
+20190712 192210.215 INFO             PET0 ---------------------> to:    0  1  1  0  0 40   0
+20190712 192210.216 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 40   0
+20190712 192210.216 INFO             PET0 ---------------------> to:    0  1  1  0  0 50   0
+20190712 192210.218 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 50   0
+20190712 192210.218 INFO             PET0 ---------------------> to:    0  1  1  0  1  0   0
+20190712 192210.219 INFO             PET0 mainApp FINISHED
+20190712 192210.219 INFO             PET0 Finalizing ESMF
+20190712 192733.320 INFO             PET0 Running with ESMF Version 7.1.0r
+20190712 192733.320 INFO             PET0 mainApp STARTING
+20190712 192733.322 INFO             PET0 driver - Creating model component MODEL without petList.
+20190712 192733.329 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0  0   0
+20190712 192733.329 INFO             PET0 ---------------------> to:    0  1  1  0  0 10   0
+20190712 192733.334 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 10   0
+20190712 192733.334 INFO             PET0 ---------------------> to:    0  1  1  0  0 20   0
+20190712 192733.336 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 20   0
+20190712 192733.336 INFO             PET0 ---------------------> to:    0  1  1  0  0 30   0
+20190712 192733.337 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 30   0
+20190712 192733.337 INFO             PET0 ---------------------> to:    0  1  1  0  0 40   0
+20190712 192733.339 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 40   0
+20190712 192733.339 INFO             PET0 ---------------------> to:    0  1  1  0  0 50   0
+20190712 192733.340 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 50   0
+20190712 192733.340 INFO             PET0 ---------------------> to:    0  1  1  0  1  0   0
+20190712 192733.341 INFO             PET0 mainApp FINISHED
+20190712 192733.341 INFO             PET0 Finalizing ESMF
+20190712 193031.347 INFO             PET0 Running with ESMF Version 7.1.0r
+20190712 193031.347 INFO             PET0 mainApp STARTING
+20190712 193031.349 INFO             PET0 driver - Creating model component MODEL without petList.
+20190712 193031.356 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0  0   0
+20190712 193031.356 INFO             PET0 ---------------------> to:    0  1  1  0  0 10   0
+20190712 193031.359 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 10   0
+20190712 193031.359 INFO             PET0 ---------------------> to:    0  1  1  0  0 20   0
+20190712 193031.362 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 20   0
+20190712 193031.362 INFO             PET0 ---------------------> to:    0  1  1  0  0 30   0
+20190712 193031.363 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 30   0
+20190712 193031.363 INFO             PET0 ---------------------> to:    0  1  1  0  0 40   0
+20190712 193031.364 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 40   0
+20190712 193031.364 INFO             PET0 ---------------------> to:    0  1  1  0  0 50   0
+20190712 193031.366 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 50   0
+20190712 193031.366 INFO             PET0 ---------------------> to:    0  1  1  0  1  0   0
+20190712 193031.367 INFO             PET0 mainApp FINISHED
+20190712 193031.367 INFO             PET0 Finalizing ESMF
+20190712 193539.447 INFO             PET0 Running with ESMF Version 7.1.0r
+20190712 193539.447 INFO             PET0 mainApp STARTING
+20190712 193539.449 INFO             PET0 driver - Creating model component MODEL without petList.
+20190712 193539.459 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0  0   0
+20190712 193539.459 INFO             PET0 ---------------------> to:    0  1  1  0  0 10   0
+20190712 193539.464 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 10   0
+20190712 193539.464 INFO             PET0 ---------------------> to:    0  1  1  0  0 20   0
+20190712 193539.465 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 20   0
+20190712 193539.465 INFO             PET0 ---------------------> to:    0  1  1  0  0 30   0
+20190712 193539.467 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 30   0
+20190712 193539.467 INFO             PET0 ---------------------> to:    0  1  1  0  0 40   0
+20190712 193539.469 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 40   0
+20190712 193539.469 INFO             PET0 ---------------------> to:    0  1  1  0  0 50   0
+20190712 193539.471 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 50   0
+20190712 193539.471 INFO             PET0 ---------------------> to:    0  1  1  0  1  0   0
+20190712 193539.473 INFO             PET0 mainApp FINISHED
+20190712 193539.473 INFO             PET0 Finalizing ESMF
+20190712 193649.965 INFO             PET0 Running with ESMF Version 7.1.0r
+20190712 193649.965 INFO             PET0 mainApp STARTING
+20190712 193649.966 INFO             PET0 driver - Creating model component MODEL without petList.
+20190712 193649.975 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0  0   0
+20190712 193649.975 INFO             PET0 ---------------------> to:    0  1  1  0  0 10   0
+20190712 193649.978 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 10   0
+20190712 193649.978 INFO             PET0 ---------------------> to:    0  1  1  0  0 20   0
+20190712 193649.980 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 20   0
+20190712 193649.980 INFO             PET0 ---------------------> to:    0  1  1  0  0 30   0
+20190712 193649.981 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 30   0
+20190712 193649.981 INFO             PET0 ---------------------> to:    0  1  1  0  0 40   0
+20190712 193649.982 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 40   0
+20190712 193649.983 INFO             PET0 ---------------------> to:    0  1  1  0  0 50   0
+20190712 193649.984 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 50   0
+20190712 193649.984 INFO             PET0 ---------------------> to:    0  1  1  0  1  0   0
+20190712 193649.985 INFO             PET0 mainApp FINISHED
+20190712 193649.985 INFO             PET0 Finalizing ESMF
+20190712 195307.957 INFO             PET0 Running with ESMF Version 7.1.0r
+20190712 195307.958 INFO             PET0 mainApp STARTING
+20190712 195307.959 INFO             PET0 driver - Creating model component MODEL without petList.
+20190712 195307.971 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0  0   0
+20190712 195307.971 INFO             PET0 ---------------------> to:    0  1  1  0  0 10   0
+20190712 195307.975 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 10   0
+20190712 195307.975 INFO             PET0 ---------------------> to:    0  1  1  0  0 20   0
+20190712 195307.977 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 20   0
+20190712 195307.977 INFO             PET0 ---------------------> to:    0  1  1  0  0 30   0
+20190712 195307.978 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 30   0
+20190712 195307.978 INFO             PET0 ---------------------> to:    0  1  1  0  0 40   0
+20190712 195307.980 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 40   0
+20190712 195307.980 INFO             PET0 ---------------------> to:    0  1  1  0  0 50   0
+20190712 195307.981 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 50   0
+20190712 195307.981 INFO             PET0 ---------------------> to:    0  1  1  0  1  0   0
+20190712 195307.983 INFO             PET0 mainApp FINISHED
+20190712 195307.983 INFO             PET0 Finalizing ESMF
+20190712 201159.962 INFO             PET0 Running with ESMF Version 7.1.0r
+20190712 201248.041 INFO             PET0 Running with ESMF Version 7.1.0r
+20190712 201248.041 INFO             PET0 mainApp STARTING
+20190712 201248.042 INFO             PET0 driver - Creating model component MODEL without petList.
+20190712 201248.050 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0  0   0
+20190712 201248.050 INFO             PET0 ---------------------> to:    0  1  1  0  0 10   0
+20190712 201248.054 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 10   0
+20190712 201248.054 INFO             PET0 ---------------------> to:    0  1  1  0  0 20   0
+20190712 201248.055 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 20   0
+20190712 201248.055 INFO             PET0 ---------------------> to:    0  1  1  0  0 30   0
+20190712 201248.056 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 30   0
+20190712 201248.056 INFO             PET0 ---------------------> to:    0  1  1  0  0 40   0
+20190712 201248.058 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 40   0
+20190712 201248.058 INFO             PET0 ---------------------> to:    0  1  1  0  0 50   0
+20190712 201248.059 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 50   0
+20190712 201248.059 INFO             PET0 ---------------------> to:    0  1  1  0  1  0   0
+20190712 201248.061 INFO             PET0 mainApp FINISHED
+20190712 201248.061 INFO             PET0 Finalizing ESMF
+20190712 204504.958 INFO             PET0 Running with ESMF Version 7.1.0r
+20190712 204504.959 INFO             PET0 mainApp STARTING
+20190712 204504.960 INFO             PET0 driver - Creating model component MODEL without petList.
+20190712 204504.968 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0  0   0
+20190712 204504.968 INFO             PET0 ---------------------> to:    0  1  1  0  0 10   0
+20190712 204504.972 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 10   0
+20190712 204504.972 INFO             PET0 ---------------------> to:    0  1  1  0  0 20   0
+20190712 204504.973 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 20   0
+20190712 204504.973 INFO             PET0 ---------------------> to:    0  1  1  0  0 30   0
+20190712 204504.974 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 30   0
+20190712 204504.974 INFO             PET0 ---------------------> to:    0  1  1  0  0 40   0
+20190712 204504.975 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 40   0
+20190712 204504.975 INFO             PET0 ---------------------> to:    0  1  1  0  0 50   0
+20190712 204504.976 INFO             PET0 ---->Advancing Model from:    0  1  1  0  0 50   0
+20190712 204504.976 INFO             PET0 ---------------------> to:    0  1  1  0  1  0   0
+20190712 204504.977 INFO             PET0 mainApp FINISHED
+20190712 204504.977 INFO             PET0 Finalizing ESMF

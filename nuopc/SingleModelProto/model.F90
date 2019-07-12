@@ -14,8 +14,8 @@ module MODEL
   ! MODEL Component.
   !-----------------------------------------------------------------------------
 
-  use maooam_wrapper, only: maooam_initialize, maooam_run, maooam_finalize
-  use maooam_wrapper, only: maooam_natm, maooam_nocn
+  use maooam_coupled_wrapper, only: maooam_initialize, maooam_run, maooam_finalize
+  use maooam_coupled_wrapper, only: maooam_natm, maooam_nocn
 
   use ESMF
   use NUOPC
@@ -205,7 +205,8 @@ module MODEL
     ! Allocate pointer:
     print *, "ndim = ", ndim
     print *, "allocating farrayP(ndim)..."
-    allocate(farrayP(ndim))    ! user controlled allocation
+    allocate(farrayP(0:ndim))    ! user controlled allocation
+    farrayP(0) = 0.0d0                ! initialize to some value
     farrayP(1:10)  = 1.0d0            ! initialize to some value
     farrayP(11:20) = 2.0d0            ! initialize to some value
     farrayP(21:28) = 3.0d0            ! initialize to some value
@@ -414,28 +415,38 @@ module MODEL
       file=__FILE__)) &
       return  ! bail out
 
-    !STEVE: To get time information from the ESMF_Clock:
-    !STEVE: http://www.earthsystemmodeling.org/esmf_releases/non_public/ESMF_1_0_8/ESMF_refdoc/node5.html#SECTION050441000000000000000
-
     call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
-    t = real(seconds)
+      return
+
+    t = dble(seconds)
+    print *, "t seconds = ", seconds
+
     call ESMF_TimeIntervalGet(timeStep, s_i8=seconds, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
-    dt = real(seconds)
+      return
+
+    dt = dble(seconds)
+    print *, "dt seconds = ", seconds
+
     Nt = 1 !STEVE: just run one step of dt
 
     !STEVE: I'm assuming all I need to do is update the data array referenced by the pointer that is registered with the state object
 !   print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
+    ! Transform seconds to model non-dimensional time (approximate)
+    t = t/1000
+    dt = dt/1000
+    print *, "Using t = ", t
+    print *, "Using dt = ", dt
+
     call maooam_run(X=farrayP,t=t,dt=dt,Nt=Nt) !,component)
 !   print *, "ModelAdvance:: Post- maooam model run: farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
-
 
     if (local_verbose) print *, "ModelAdvance:: finished."
     
@@ -452,15 +463,8 @@ module MODEL
     type(ESMF_Field)            :: field          ! Field object
     type(ESMF_Grid)             :: gridOut
 
-    ! Get things to clean up
-    !STEVE: not sure how to best access this
-
     ! Clean up
     call ESMF_GridCompFinalize(model)
-!   call ESMF_FieldDestroy(field, rc=rc) ! destroy the Array
-!   call ESMF_DistGridDestroy(distgrid, rc=rc) ! destroy the DistGrid
-!   call ESMF_GridDestroy(grid=gridOut,rc=rc)
-!   call ESMF_Finalize(rc=rc)
 
     deallocate(farrayP)                  ! user controlled de-allocation
     

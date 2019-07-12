@@ -21,12 +21,16 @@ with open(datfile, 'r') as fp:
       print('len(IC) = ', len(IC))
       break
 
+# The data in evol_field.dat include the leading 0 index, so remove it
+IC.pop(0)
+
 # Read in IC.nml file and replace IC definitions with new IC values
 ICfile='IC.nml.orig'
 newfile='IC.nml.new'
 #  IC(1) =   -0.0000000000000000         ! typ= A, Nx= 0.0, Ny= 1.0
 # https://regexone.com/problem/matching_decimal_numbers
 p = re.compile(r'-?\d+\.\d+')
+p2 = re.compile(r'init_type= \'(\w+)\'')
 idx=0
 fo = open(newfile,'w')
 with open(ICfile, 'r') as fp:
@@ -44,7 +48,13 @@ with open(ICfile, 'r') as fp:
       print(line)      
       idx = idx + 1
 
+    # Change 'rand' to 'read' so that this info is used
+    if ('rand' in line):
+      line = p2.sub('init_type= \'read\'',line,1)
+
     # Write new line to file
     fo.write(line)
+
+
 
 fo.close()
