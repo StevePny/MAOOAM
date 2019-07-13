@@ -27,7 +27,6 @@ module ATM
   private
 
   real(ESMF_KIND_R8), pointer :: farrayP(:)   ! Fortran array pointer
-  integer, parameter :: fdim2 = 2
   
   public SetServices
   
@@ -62,13 +61,6 @@ module ATM
       file=__FILE__)) &
       return  ! bail out
 
-    !STEVE: testing IPDv05p3
-!   call NUOPC_CompSetEntryPoint(model, ESMF_METHOD_INITIALIZE, &
-!     phaseLabelList=(/"IPDv05p3"/), userRoutine=InitializeP3, rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-    
     ! attach specializing method(s)
     call NUOPC_CompSpecialize(model, specLabel=model_label_Advance, &
       specRoutine=ModelAdvance, rc=rc)
@@ -198,7 +190,8 @@ module ATM
     ! Allocate pointer:
     print *, "ndim = ", ndim
     print *, "allocating farrayP(ndim)..."
-    allocate(farrayP(ndim))    ! user controlled allocation
+    allocate(farrayP(0:ndim))    ! user controlled allocation
+    farrayP(0) = 0.0d0
     farrayP(1:10)  = 1.0d0            ! initialize to some value
     farrayP(11:20) = 2.0d0            ! initialize to some value
     farrayP(21:28) = 3.0d0            ! initialize to some value
@@ -218,7 +211,6 @@ module ATM
 
     ! Create the Grid objects
     gridAtm = ESMF_GridCreate(distgrid=distgridAtm, name="atmos_grid", rc=rc)
-!   gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1/), maxIndex=(/maooam_natm/), name="atmos_grid", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -233,14 +225,10 @@ module ATM
 
     ! Create the Grid objects
     gridOcn = ESMF_GridCreate(distgrid=distgridOcn, name="ocean_grid", rc=rc)
-!   gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1), maxIndex=(/maooam_nocn/), name="ocean_grid", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-
-!   call ESMF_GridAddCoord(gridAtm, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
-!   call ESMF_GridAddCoord(gridOcn, staggerLoc=ESMF_STAGGERLOC_CENTER, rc=rc)
 
     !--------------------------------------------------------------------------
     ! Get the importable arrays
@@ -392,10 +380,7 @@ module ATM
       return  ! bail out
 
     !--------------------------------------------------------------------------
-    !--------------------------------------------------------------------------
-
-    !--------------------------------------------------------------------------
-    !STEVE: Assuming the model goes here:
+    ! Run model integration/step
     !--------------------------------------------------------------------------
     call ESMF_ClockGet(clock, startTime=startTime, currTime=currTime, timeStep=timeStep, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -403,28 +388,39 @@ module ATM
       file=__FILE__)) &
       return  ! bail out
 
-    !STEVE: To get time information from the ESMF_Clock:
-    !STEVE: http://www.earthsystemmodeling.org/esmf_releases/non_public/ESMF_1_0_8/ESMF_refdoc/node5.html#SECTION050441000000000000000
-
+    if (local_verbose) print *, "ATM::ModelAdvance:: calling ESMF_TimeGet..."
     call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
-    t = real(seconds)
+      return
+
+    print *, "t seconds = ", seconds
+    t = dble(seconds)
+
+    if (local_verbose) print *, "ATM::ModelAdvance:: calling ESMF_TimeIntervalGet..."
     call ESMF_TimeIntervalGet(timeStep, s_i8=seconds, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
-    dt = real(seconds)
+      return
+
+    print *, "dt seconds = ", seconds
+    dt = dble(seconds)
+
     Nt = 1 !STEVE: just run one step of dt
 
     !STEVE: I'm assuming all I need to do is update the data array referenced by the pointer that is registered with the state object
 !   print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
-!   allocate(X(36))
-!   X = farrayP(:,1)
+
+    ! Transform seconds to model non-dimensional time (approximate)
+    t = t/1000
+    dt = dt/1000
+    print *, "Using t = ", t
+    print *, "Using dt = ", dt
+
     call maooam_atmos_run(X=farrayP,t=t,dt=dt,Nt=Nt) !,component)
-!   farrayP(:,1) = X
 !   print *, "ModelAdvance:: Post- maooam model run: farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
 

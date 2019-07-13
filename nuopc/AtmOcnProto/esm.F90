@@ -147,20 +147,6 @@ module ESM
       file=__FILE__)) &
       return  ! bail out
 
-!   call NUOPC_CompAttributeSet(comp=connector, name="ConnectionOptions", value=":remapmethod=redist", rc=rc)
-!   call NUOPC_CompAttributeSet(comp=connector, name="cplList", value=":remapmethod=redist", rc=rc)
-!   call NUOPC_CompAttributeGet(comp=connector, name="cplList", value=test_cplList, rc=rc)
-!   print *, "cplList (NUOPC_CompAttributeGet) = "
-!   print *, test_cplList
-!   call NUOPC_CompAttributeGet(comp=connector, name="Verbosity", value=test_verbosity, rc=rc)
-!   print *, "Verbosity = "
-!   print *, test_verbosity
-!   call NUOPC_ConnectorGet(connector=connector, srcFields, dstFields, rh, state, CplSet, cplSetList, srcVM, dstVM, rc)
-!   call NUOPC_ConnectorGet(connector=connector, cplSetList=ptr_cplList, rc=rc)
-!   call NUOPC_ConnectorSet(connector=connector, srcFields, dstFields, rh, state, CplSet, srcVM, dstVM, rc)
-!   print *, "cplList (NUOPC_ConnectorGet) = "
-!   print *, ptr_cplList
-
     ! SetServices for ocn2atm
     if (local_verbose) print *, "ESM::SetModelServices:: calling NUOPC_DriverAddComp for OCN to ATM..."
     call NUOPC_DriverAddComp(driver, srcCompLabel="OCN", dstCompLabel="ATM", &
@@ -175,16 +161,15 @@ module ESM
       file=__FILE__)) &
       return  ! bail out
 
-!   call NUOPC_CompAttributeSet(connector, name="cplList", value=":remapmethod=redist", rc=rc)
-!   call NUOPC_CompAttributeSet(connector, name="ConnectionOptions", value=":remapmethod=redist", rc=rc)
-   
-      
 #endif
       
     ! set the driver clock
 !   call ESMF_TimeIntervalSet(timeStep, m=15, rc=rc) ! 15 minute steps
-    if (local_verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeIntervalSet for s=1..."
-    call ESMF_TimeIntervalSet(timeStep, s=1, rc=rc) ! 15 minute steps
+    ! "The time step of 0.2 nondimensional time units corresponds to 32.3 minutes in dimensional units" 
+    ! (De Cruz et al., 2018 https://arxiv.org/pdf/1712.08242.pdf)
+    !STEVE: i.e. 0.01 MTU is about 10 seconds
+    if (local_verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeIntervalSet for s=10..."
+    call ESMF_TimeIntervalSet(timeStep, s=10, rc=rc) ! 15 minute steps
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -197,8 +182,8 @@ module ESM
       file=__FILE__)) &
       return  ! bail out
 
-    if (local_verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeSet stop yy=2010, mm=6, dd=1, h=1, m=0..."
-    call ESMF_TimeSet(stopTime, yy=2010, mm=6, dd=1, h=1, m=0, calkindflag=ESMF_CALKIND_GREGORIAN, rc=rc)
+    if (local_verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeSet stop yy=2010, mm=6, dd=1, h=0, m=1..."
+    call ESMF_TimeSet(stopTime, yy=2010, mm=6, dd=1, h=0, m=1, calkindflag=ESMF_CALKIND_GREGORIAN, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &

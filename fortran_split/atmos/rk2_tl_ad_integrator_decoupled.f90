@@ -201,36 +201,27 @@ CONTAINS
     buf_j1=jacobian_mat(y)
 
     buf_y1 = y + dt*buf_f0
+    buf_y1(1+2*natm:ndim) = y(1+2*natm:ndim)
 
-    if (present(component)) then
-        if (component == 'atm') then
-            buf_y1(1+2*natm:ndim) = y(1+2*natm:ndim)
-        else if (component == 'ocn') then
-            buf_y1(1:2*natm) = y(1:2*natm)
-        end if
-    end if
     CALL tendencies(t+dt,buf_y1,buf_f1)
     buf_j2=jacobian_mat(buf_y1)
     
     buf_j1h=buf_j1
     buf_j2h=buf_j2
-    if (present(component)) then
-        if (component == 'atm') then
-            buf_j1h(1+2*natm:ndim, 1+2*natm:ndim) = 0.D0
-            buf_j2h(1+2*natm:ndim, 1+2*natm:ndim) = 0.D0
-        else if (component == 'ocn') then
-            buf_j1h(1:2*natm, 1:2*natm) = 0.D0
-            buf_j2h(1:2*natm, 1:2*natm) = 0.D0
-        end if
-    end if
+
+    buf_j1h(1+2*natm:ndim, 1+2*natm:ndim) = 0.D0
+    buf_j2h(1+2*natm:ndim, 1+2*natm:ndim) = 0.D0
 
     CALL dgemm ('n', 'n', ndim, ndim, ndim, dt, buf_j2, ndim,buf_j1h, ndim,1.0d0, buf_j2h, ndim)
      
     ynew=y  + dt/2.0d0*(buf_f0 + buf_f1)
+
+!   ynew(1+2*natm:ndim, 1+2*natm:ndim) = y(1+2*natm:ndim, 1+2*natm:ndim) 
+
     IF (adjoint) THEN
-            propagator=one - dt/2.0d0*(buf_j1h + buf_j2h)
+      propagator=one - dt/2.0d0*(buf_j1h + buf_j2h)
     ELSE
-            propagator=one + dt/2.0d0*(buf_j1h + buf_j2h)
+      propagator=one + dt/2.0d0*(buf_j1h + buf_j2h)
     END IF        
     t=t+dt
    

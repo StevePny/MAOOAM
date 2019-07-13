@@ -356,17 +356,27 @@ module MODEL
     type(ESMF_Time)             :: currTime
     type(ESMF_TimeInterval)     :: timeStep
 
-    type(ESMF_Array) :: array
+    type(ESMF_Field)        :: field
+    real(ESMF_KIND_R8), pointer :: farrayPtr(:)   ! Fortran array pointer
+!   type(ESMF_Array) :: array
     real(kind=8) :: X0,Xf
     integer(kind=8) :: seconds
     real(kind=8) :: t,dt
     integer :: Nt
+    integer :: si, ei   ! ndim = model dimension, si = start index, ei = end index
 
     logical :: local_verbose = .true.
 
     if (local_verbose) print *, "ModelAdvance :: commencing..."
 
     rc = ESMF_SUCCESS
+   
+    ! 17.2.3 Implement a user-code Run routine
+    ! During the execution loop, the run routine may be called many times. 
+    ! Each time it should read data from the importState, use the clock to 
+    ! determine what the current time is in the calling component, compute 
+    ! new values or process the data, and produce any output and place it 
+    ! in the exportState.
     
     ! query the Component for its clock, importState and exportState
     call ESMF_GridCompGet(model, clock=clock, importState=importState, exportState=exportState, rc=rc)
@@ -435,6 +445,30 @@ module MODEL
 
     Nt = 1 !STEVE: just run one step of dt
 
+    ! call ESMF_StateGet(), etc to get fields, bundles, arrays from import state.
+    !STEVE: try getting array from importState:
+!   allocate(farrayPtr(0:maooam_natm+maooam_nocn))    ! user controlled allocation
+!   call ESMF_StateGet(state=importState, itemName="psi", field=field, rc=rc)
+!   si = 1
+!   ei = maooam_natm
+!   call ESMF_FieldGet(field=field, farrayPtr=farrayPtr(si:ei), rc=rc)
+
+!   call ESMF_StateGet(state=importState, itemName="theta", field=field, rc=rc)
+!   si = maooam_natm + 1
+!   ei = maooam_natm + maooam_natm
+!   call ESMF_FieldGet(field=field, farrayPtr=farrayPtr(si:ei), rc=rc)
+
+!   call ESMF_StateGet(state=importState, itemName="A", field=field, rc=rc)
+!   si = maooam_natm*2 + 1
+!   ei = maooam_natm*2 + maooam_nocn
+!   call ESMF_FieldGet(field=field, farrayPtr=farrayPtr(si:ei), rc=rc)
+
+!   call ESMF_StateGet(state=importState, itemName="T", field=field, rc=rc)
+!   si = maooam_natm*2 + maooam_nocn + 1
+!   ei = maooam_natm*2 + maooam_nocn + maooam_nocn
+!   call ESMF_FieldGet(field=field, farrayPtr=farrayPtr(si:ei), rc=rc)
+
+
     !STEVE: I'm assuming all I need to do is update the data array referenced by the pointer that is registered with the state object
 !   print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
@@ -445,8 +479,15 @@ module MODEL
     print *, "Using dt = ", dt
 
     call maooam_run(X=farrayP,t=t,dt=dt,Nt=Nt) !,component)
+!   call maooam_run(X=farrayPtr,t=t,dt=dt,Nt=Nt) !,component)
+
 !   print *, "ModelAdvance:: Post- maooam model run: farrayP = "
 !   print *, farrayP            ! print PET-local farrayA directly
+
+    ! Fill export state here using ESMF_StateAdd(), etc
+    
+
+    print *, "Gridded Comp Run returning"
 
     if (local_verbose) print *, "ModelAdvance:: finished."
     

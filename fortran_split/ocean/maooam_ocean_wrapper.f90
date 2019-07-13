@@ -53,49 +53,79 @@ end subroutine maooam_ocean_initialize
 
 
 !------------------------------------------------------------------------------
-subroutine maooam_ocean_run(X,t,dt,Nt,component)
+subroutine maooam_ocean_run(X,t,dt,Nt)
 !------------------------------------------------------------------------------
 
 use ocean_integrator, only: step
 use ocean_ic_def, only: load_IC
 
 use ocean_ic_def, only: IC
+use ocean_params, only: ndim
 
 real(kind=8), dimension(:), pointer, intent(inout)  :: X
 real(kind=8), intent(inout) :: t
 real(kind=8), intent(in) :: dt
 integer, intent(in) :: Nt
-character(3), intent(in), optional :: component !empty, 'atm', or 'ocn'. If the latter two cases, uses the other part as fixed forcing
-! https://stackoverflow.com/questions/43351338/passing-a-value-for-an-optional-fortran-parameter-that-will-return-false-for-pre
-!character(3), allocatable, intent(in), optional :: component !empty, 'atm', or 'ocn'. If the latter two cases, uses the other part as fixed forcing
 real(kind=8), allocatable, dimension(:) :: Xnew
 integer :: n
+
+logical :: local_verbose = .true.
 
 ! Load the initial conditions
 if (first_flag) then
   call load_IC
+
+  if (local_verbose) then
+    print *, "ocean::maooam_run :: X = "
+    print *, X
+    print *, "ocean::maooam_run :: IC = "
+    print *, IC
+  endif
+
   X = IC
   first_flag=.false.
 endif
 
 ! Setup array for iterating
 n = size(X)
-allocate(Xnew(n))
+if (ndim+1 .ne. n) then
+  print *, "ocean::maooam_run:: ERROR"
+  print *, "ndim+1 = ", ndim+1
+  print *, "size(X) = ", n
+  stop 1
+endif
+allocate(Xnew(0:ndim))
 
-print *, "maooam_ocean_run :: init X = "
-print *, X
+if (local_verbose) then
+  print *, "====================================================================="
+  print *, "ocean::maooam_run :: init X = "
+  print *, X
+  print *, "---------------------------------------------------------------------"
+endif
 
 !Cycle MAOOAM through this time step of JEDI
-do n = 1,Nt
-! call step(X,t,dt,Xnew)
-  ! Use the following to support forcing from atmosphere or ocean on the full state.
+do i = 1,Nt
+  if (local_verbose) then
+    print *, "i, t, dt = ", i, t, dt
+    print *, "X0 = "
+    print *, X
+  endif
   call step(X,t,dt,Xnew,component)
   X=Xnew
   ! Debug:
-  print *, X
+  if (local_verbose) then
+    print *, "Xnew = "
+    print *, Xnew
+    print *, "-------------------------------------------------------------------"
+  endif
 enddo
-print *, "maooam_ocean_run:: final X = "
-print *, X
+
+if (local_verbose) then
+  print *, "---------------------------------------------------------------------"
+  print *, "ocean::maooam_run:: final X = "
+  print *, X
+  print *, "====================================================================="
+endif
 
 end subroutine maooam_ocean_run
 

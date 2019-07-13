@@ -27,6 +27,8 @@ PROGRAM maooam
   LOGICAL :: cont_evol    !< True if the initial state is to be read in snapshot_trans.dat (i.e. the previous evolution is to be continued)
   LOGICAL :: ex
 
+  logical :: local_verbose = .true. !STEVE
+
   PRINT*, 'Model MAOOAM v1.3'
   PRINT*, 'Loading information...'
 
@@ -88,15 +90,42 @@ PROGRAM maooam
 
   IF (writeout) WRITE(10,*) t,X(1:ndim)
 
+  if (local_verbose) then
+    print *, "====================================================================="
+    print *, "maooam_run :: init X = "
+    print *, X
+    print *, "---------------------------------------------------------------------" 
+  endif
+ 
   DO WHILE (t<t_run)
-     CALL step(X,t,dt,Xnew)
-     X=Xnew
-     IF (mod(t,tw)<dt) THEN
-        IF (writeout) WRITE(10,*) t,X(1:ndim)
+    if (local_verbose) then
+      print *, "iteration t = ", t
+      print *, "X0 = "
+      print *, X
+    endif
+
+    CALL step(X,t,dt,Xnew)
+    X=Xnew
+    IF (mod(t,tw)<dt) THEN
+      IF (writeout) WRITE(10,*) t,X(1:ndim)
         CALL acc(X)
-     END IF
-     IF (mod(t/t_run*100.D0,0.1)<t_up) WRITE(*,'(" Progress ",F6.1," %",A,$)') t/t_run*100.D0,char(13)
+    END IF
+    IF (mod(t/t_run*100.D0,0.1)<t_up) WRITE(*,'(" Progress ",F6.1," %",A,$)') t/t_run*100.D0,char(13)
+
+    if (local_verbose) then
+      print *, "Xnew = "
+      print *, Xnew
+      print *, "-------------------------------------------------------------------"
+    endif
+
   END DO
+
+  if (local_verbose) then
+    print *, "---------------------------------------------------------------------"
+    print *, "maooam_run:: final X = "
+    print *, X
+    print *, "====================================================================="
+  endif
 
   PRINT*, 'Evolution finished.'
 

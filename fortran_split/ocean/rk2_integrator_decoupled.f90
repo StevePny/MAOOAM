@@ -69,18 +69,31 @@ CONTAINS
     REAL(KIND=8), INTENT(IN) :: dt
     REAL(KIND=8), DIMENSION(0:ndim), INTENT(OUT) :: res
     CHARACTER*3, OPTIONAL, INTENT(IN) :: component
+
     CALL tendencies(t,y,buf_f0)
-    buf_y1 = y+dt*buf_f0
+
     if (present(component)) then
-        if (component == 'atm') then
-            buf_y1(1+2*natm:ndim) = y(1+2*natm:ndim)
-        else if (component == 'ocn') then
-            buf_y1(1:2*natm) = y(1:2*natm)
-        end if
-    end if
+      if (component == 'ocn') then
+        ! Zero out atmosphere tendencies
+        buf_f0(1:2*natm) = 0.0d0
+      endif
+    endif
+
+    buf_y1 = y+dt*buf_f0
+
     CALL tendencies(t+dt,buf_y1,buf_f1)
+
+    if (present(component)) then
+      if (component == 'ocn') then
+        ! Zero out atmosphere tendencies
+        buf_f1(1:2*natm) = 0.0d0
+      endif
+    endif
+
     res=y+0.5*(buf_f0+buf_f1)*dt
+
     t=t+dt
+
   END SUBROUTINE step
 
 END MODULE ocean_integrator
