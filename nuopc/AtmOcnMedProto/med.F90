@@ -20,13 +20,15 @@ module MED
     mediator_routine_SS             => SetServices, &
     mediator_label_Advance          => label_Advance
 
-! use maooam_atmos_wrapper, only: maooam_atmos_initialize, maooam_atmos_run, maooam_atmos_finalize
-  use maooam_atmos_wrapper, only: maooam_natm !, maooam_nocn
+  use maooam_atmos_wrapper, only: maooam_natm
   use maooam_ocean_wrapper, only: maooam_nocn
   
   implicit none
   
   private
+
+  type(ESMF_State), save  :: frOCN, toOCN
+  type(ESMF_State), save  :: frATM, toATM
   
   public SetServices
   
@@ -164,6 +166,10 @@ module MED
     type(ESMF_Grid)         :: gridAtm
     type(ESMF_Grid)         :: gridOcn
 
+    !STEVE: ESMF pointer to store grid
+    type(ESMF_DistGrid)         :: distgridAtm       ! DistGrid object
+    type(ESMF_DistGrid)         :: distgridOcn       ! DistGrid object
+
     logical :: local_verbose = .true.
     
     rc = ESMF_SUCCESS
@@ -172,57 +178,44 @@ module MED
     ! Set up ESMF grid objects
     !--------------------------------------------------------------------------
 
-    gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1/), maxIndex=(/maooam_nocn/), name="ocean_grid", rc=rc)
+    ! create a distribution Grid object
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_DistGridCreate..."
+    distgridOcn = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_nocn/), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-    gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1/), maxIndex=(/maooam_natm/), name="atmos_grid", rc=rc)
+    ! Create the Grid objects
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_GridCreate ocean_grid..."
+    gridOcn = ESMF_GridCreate(distgrid=distgridOcn, name="ocean_grid", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
+    ! create a distribution Grid object
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_DistGridCreate..."
+    distgridAtm = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_natm/), rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! Create the Grid objects
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_GridCreate atmos_grid..."
+    gridAtm = ESMF_GridCreate(distgrid=distgridAtm, name="atmos_grid", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !--------------------------------------------------------------------------
     ! Imports
-
-    ! importable array: Ocean temperature
-    field = ESMF_FieldCreate(name="T", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call NUOPC_Realize(state=importState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    ! importable array: Ocean streamfunction
-    field = ESMF_FieldCreate(name="A", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call NUOPC_Realize(state=importState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    ! importable field: air_temperature
-    field = ESMF_FieldCreate(name="theta", grid=gridAtm, typekind=ESMF_TYPEKIND_R8, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call NUOPC_Realize(importState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    !--------------------------------------------------------------------------
 
     ! importable field: atmosphere_streafunction
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_FieldCreate psi..."
     field = ESMF_FieldCreate(name="psi", grid=gridAtm, typekind=ESMF_TYPEKIND_R8, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
@@ -234,22 +227,64 @@ module MED
       file=__FILE__)) &
       return  ! bail out
 
-    ! Exports
-
-    ! exportable field: sea_surface_temperature
-    field = ESMF_FieldCreate(name="T", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    ! importable field: air_temperature
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_FieldCreate theta..."
+    field = ESMF_FieldCreate(name="theta", grid=gridAtm, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call NUOPC_Realize(importState, field=field, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-    ! exportable field: ocean_streamfunction
+    ! importable array: Ocean streamfunction
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_FieldCreate A..."
     field = ESMF_FieldCreate(name="A", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
+      return  ! bail out
+    call NUOPC_Realize(state=importState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! importable array: Ocean temperature
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_FieldCreate T..."
+    field = ESMF_FieldCreate(name="T", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call NUOPC_Realize(state=importState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !--------------------------------------------------------------------------
+    ! Exports
+    !--------------------------------------------------------------------------
+
+    ! exportable field: atmosphere streamfunction
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_FieldCreate psi..."
+    field = ESMF_FieldCreate(name="psi", grid=gridAtm, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call NUOPC_Realize(exportState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
 
     ! exportable field: air temperature
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_FieldCreate theta..."
     field = ESMF_FieldCreate(name="theta", grid=gridAtm, typekind=ESMF_TYPEKIND_R8, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
@@ -261,8 +296,22 @@ module MED
       file=__FILE__)) &
       return  ! bail out
 
-    ! exportable field: atmosphere streamfunction
-    field = ESMF_FieldCreate(name="psi", grid=gridAtm, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    ! exportable field: ocean_streamfunction
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_FieldCreate A..."
+    field = ESMF_FieldCreate(name="A", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call NUOPC_Realize(exportState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! exportable field: sea_surface_temperature
+    if (local_Verbose) print *, "MED::InitializeP2:: calling ESMF_FieldCreate T..."
+    field = ESMF_FieldCreate(name="T", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -285,12 +334,25 @@ module MED
     type(ESMF_Clock)            :: clock
     type(ESMF_State)            :: importState, exportState
     character(len=160)          :: msgString
+    integer                     :: itemCount(4)
+
+    type(ESMF_StateItem_Flag)   :: itemType
+    type(ESMF_Field)            :: field
+    real(ESMF_KIND_R8), pointer :: dataPtr_im(:)   => null()
+    real(ESMF_KIND_R8), pointer :: dataPtr_ex(:)   => null()
+
+    type(ESMF_Time)             :: currTime, startTime
+    type(ESMF_TimeInterval)     :: timeStep
+    integer(kind=8) :: seconds
+    real(kind=8) :: t, dt
+
+    logical :: local_verbose = .true.
 
     rc = ESMF_SUCCESS
     
     ! query the Component for its clock, importState and exportState
-    call ESMF_GridCompGet(mediator, clock=clock, importState=importState, &
-      exportState=exportState, rc=rc)
+    if (local_Verbose) print *, "MED::MediatorAdvance:: calling ESMF_GridCompGet..."
+    call ESMF_GridCompGet(mediator, clock=clock, importState=importState, exportState=exportState, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -333,6 +395,218 @@ module MED
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+    !--------------------------------------------------------------------------
+    !STEVE: Give the ocean fields to the atmosphere
+    !--------------------------------------------------------------------------
+
+    ! Ocean streamfunction import/export:
+
+    if (local_Verbose) print *, "MED::MediatorAdvance:: calling ESMF_StateGet A..."
+    call ESMF_StateGet(importState, itemName="A", itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(importState, itemName="A", field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr_im, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      stop 3
+    endif
+
+    call ESMF_StateGet(exportState, itemName="A", itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(exportState, itemName="A", field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr_ex, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      stop 3
+    endif
+
+    dataPtr_ex = dataPtr_im
+
+    ! Ocean temperature import/export:
+
+    if (local_Verbose) print *, "MED::MediatorAdvance:: calling ESMF_StateGet T..."
+    call ESMF_StateGet(importState, itemName="T", itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(importState, itemName="T", field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr_im, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      stop 4
+    endif
+
+    call ESMF_StateGet(exportState, itemName="T", itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(exportState, itemName="T", field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr_ex, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      stop 4
+    endif
+
+    dataPtr_ex = dataPtr_im
+
+    !--------------------------------------------------------------------------
+    !STEVE: Give the atmosphere fields to the ocean
+    !--------------------------------------------------------------------------
+
+    ! Atmosphere streamfunction import/export:
+
+    if (local_Verbose) print *, "MED::MediatorAdvance:: calling ESMF_StateGet psi..."
+    call ESMF_StateGet(importState, itemName="psi", itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(importState, itemName="psi", field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr_im, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      stop 1
+    endif
+
+    call ESMF_StateGet(exportState, itemName="psi", itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(exportState, itemName="psi", field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr_ex, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      stop 1
+    endif
+
+    dataPtr_ex = dataPtr_im
+
+    ! Atmosphere temperature import/export:
+
+    if (local_Verbose) print *, "MED::MediatorAdvance:: calling ESMF_StateGet theta..."
+    call ESMF_StateGet(importState, itemName="theta", itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(importState, itemName="theta", field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr_im, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      stop 2
+    endif
+
+    call ESMF_StateGet(exportState, itemName="theta", itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(exportState, itemName="theta", field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr_ex, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      stop 2
+    endif
+
+    dataPtr_ex = dataPtr_im
+
+    !--------------------------------------------------------------------------
+    ! Get timing info
+    !--------------------------------------------------------------------------
+    call ESMF_ClockGet(clock, startTime=startTime, currTime=currTime, timeStep=timeStep, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return
+    t = dble(seconds)
+    call ESMF_TimeIntervalGet(timeStep, s_i8=seconds, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return
+    dt = dble(seconds)
+
+    print *, "MED::MediatorAdvance:  t = ", t
+    print *, "MED::MediatorAdvance: dt = ", dt
 
   end subroutine MediatorAdvance
 

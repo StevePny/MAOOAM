@@ -130,7 +130,7 @@ module ESM
 
     ! set the driver clock
     if (local_Verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeIntervalSet..."
-    call ESMF_TimeIntervalSet(timeStep, m=15, rc=rc) ! 15 minute steps
+    call ESMF_TimeIntervalSet(timeStep, s=10, rc=rc) ! 15 minute steps
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -144,7 +144,7 @@ module ESM
       return  ! bail out
 
     if (local_Verbose) print *, "ESM::SetModelServices:: calling ESMF_TimeSet..."
-    call ESMF_TimeSet(stopTime, yy=2010, mm=6, dd=1, h=1, m=0, rc=rc)
+    call ESMF_TimeSet(stopTime, yy=2010, mm=6, dd=1, h=0, m=1, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -212,8 +212,7 @@ module ESM
 
     ! ingest FreeFormat run sequence
     if (local_Verbose) print *, "ESM::SetRunSequence:: calling NUOPC_DriverIngestRunSequence..."
-!   call NUOPC_DriverIngestRunSequence(driver, runSeqFF, autoAddConnectors=.true., rc=rc)
-    call NUOPC_DriverIngestRunSequence(driver, runSeqFF, autoAddConnectors=.false., rc=rc)
+    call NUOPC_DriverIngestRunSequence(driver, runSeqFF, autoAddConnectors=.true., rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, file=trim(name)//":"//__FILE__)) return  ! bail out
 
