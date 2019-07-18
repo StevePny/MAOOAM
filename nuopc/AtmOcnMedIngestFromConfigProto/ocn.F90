@@ -25,8 +25,9 @@ module OCN
   
   private
 
-  real(ESMF_KIND_R8), pointer :: farrayP(:,:)   ! Fortran array pointer
-  
+  real(kind=8), save :: f0=0
+  integer, dimension(4) :: si, ei
+
   public SetServices
   
   !-----------------------------------------------------------------------------
@@ -149,7 +150,8 @@ module OCN
     !STEVE: ESMF pointer to store grid
     type(ESMF_DistGrid)         :: distgridAtm       ! DistGrid object
     type(ESMF_DistGrid)         :: distgridOcn       ! DistGrid object
-    integer :: ndim, si, ei   ! ndim = model dimension, si = start index, ei = end index
+
+    real(ESMF_KIND_R8), pointer   :: dataPtr(:) => null()
 
     logical :: local_verbose = .true.
 
@@ -163,37 +165,43 @@ module OCN
     !       and tries to reallocate the same arrays
     call maooam_ocean_initialize()
     print *, "OCN::InitializeP2:: Finished maooam_ocean_initialize."
-
-    ! Get model state dimension
-    ndim = 2*maooam_natm+2*maooam_nocn
-
-    if (ndim == 0 .or. ndim <= maooam_natm .or. ndim <= maooam_nocn) then
-      print *, "OCN::InitializeP2::ERROR:: ndim = ", 0
-      print *, "OCN::InitializeP2::EXITING..."
-      stop 'OCN'
-    endif
-    
-    ! Allocate pointer:
-    print *, "ndim = ", ndim
-    print *, "allocating farrayP(ndim,1)..."
-    allocate(farrayP(ndim,1))    ! user controlled allocation
-    farrayP(1:10,1)  = 1.0d0            ! initialize to some value
-    farrayP(11:20,1) = 2.0d0            ! initialize to some value
-    farrayP(21:28,1) = 3.0d0            ! initialize to some value
-    farrayP(29:36,1) = 4.0d0            ! initialize to some value
-    print *, "farrayP = ", farrayP
+    ! Set up grid indices:
+    si(1) = 1
+    ei(1) = maooam_natm
+    si(2) = maooam_natm + 1
+    ei(2) = maooam_natm + maooam_natm
+    si(3) = maooam_natm*2 + 1
+    ei(3) = maooam_natm*2 + maooam_nocn
+    si(4) = maooam_natm*2 + maooam_nocn + 1
+    ei(4) = maooam_natm*2 + maooam_nocn + maooam_nocn
 
     !--------------------------------------------------------------------------
     ! Set up ESMF grid objects
     !--------------------------------------------------------------------------
 
-    gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_nocn,1/), name="ocean_grid", rc=rc)
+    ! create a distribution Grid object
+    distgridAtm = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_natm/), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-    gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_natm,1/), name="atmos_grid", rc=rc)
+    ! Create the Grid objects
+    gridAtm = ESMF_GridCreate(distgrid=distgridAtm, name="atmos_grid", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! create a distribution Grid object
+    distgridOcn = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_nocn/), rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! Create the Grid objects
+    gridOcn = ESMF_GridCreate(distgrid=distgridOcn, name="ocean_grid", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -203,37 +211,29 @@ module OCN
     ! Get the importable arrays
     !--------------------------------------------------------------------------
 
-    ! importable array: Atmospheric temperature
-    si = 1
-    ei = maooam_natm
-    print *, "si, ei = ", si, ei
-    if (local_verbose) print *, "OCN::InitializeP2:: Calling ESMF_FieldCreate for theta..."
-    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL, name="theta", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (local_verbose) print *, "OCN::InitializeP2:: Finished ESMF_FieldCreate for theta."
-
-    call NUOPC_Realize(importState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
     ! importable array: Atmospheric streamfunction
-    si = maooam_natm + 1
-    ei = maooam_natm + maooam_natm
-    print *, "si, ei = ", si, ei
     if (local_verbose) print *, "OCN::InitializeP2:: Calling ESMF_FieldCreate for psi..."
-    field = ESMF_FieldCreate(grid=gridAtm, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL, name="psi", rc=rc)
+    field = ESMF_FieldCreate(grid=gridAtm, typekind=ESMF_TYPEKIND_R8, name="psi", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
     if (local_verbose) print *, "OCN::InitializeP2:: Finished ESMF_FieldCreate for psi."
-
     call NUOPC_Realize(state=importState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! importable array: Atmospheric temperature
+    if (local_verbose) print *, "OCN::InitializeP2:: Calling ESMF_FieldCreate for theta..."
+    field = ESMF_FieldCreate(grid=gridAtm, typekind=ESMF_TYPEKIND_R8, name="theta", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (local_verbose) print *, "OCN::InitializeP2:: Finished ESMF_FieldCreate for theta."
+    call NUOPC_Realize(importState, field=field, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -243,44 +243,46 @@ module OCN
     ! Get the exportable arrays
     !--------------------------------------------------------------------------
 
-    ! exportable array: Ocean temperature
-    si = maooam_natm*2 + 1
-    ei = maooam_natm*2 + maooam_nocn
-    print *, "si, ei = ", si, ei
-    if (local_verbose) print *, "OCN::InitializeP2:: Calling ESMF_FieldCreate for T..."
-    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL,  name="T", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (local_verbose) print *, "OCN::InitializeP2:: Finished ESMF_FieldCreate for T."
-
-    call NUOPC_Realize(state=exportState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
     ! exportable array: Ocean streamfunction
-    si = maooam_natm*2 + maooam_nocn + 1
-    ei = maooam_natm*2 + maooam_nocn + maooam_nocn
-    print *, "si, ei = ", si, ei
     if (local_verbose) print *, "OCN::InitializeP2:: Calling ESMF_FieldCreate for A..."
-    field = ESMF_FieldCreate(grid=gridOcn, farray=farrayP(si:ei,1), indexflag=ESMF_INDEX_DELOCAL, name="A", rc=rc)
+    field = ESMF_FieldCreate(grid=gridOcn, typekind=ESMF_TYPEKIND_R8, name="A", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
     if (local_verbose) print *, "OCN::InitializeP2:: Finished ESMF_FieldCreate for A."
-
     call NUOPC_Realize(state=exportState, field=field, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-    if (local_verbose) print *, "OCN::InitializeP2:: finished."
+    ! exportable array: Ocean temperature
+    if (local_verbose) print *, "OCN::InitializeP2:: Calling ESMF_FieldCreate for T..."
+    field = ESMF_FieldCreate(grid=gridOcn, typekind=ESMF_TYPEKIND_R8, name="T", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (local_verbose) print *, "OCN::InitializeP2:: Finished ESMF_FieldCreate for T."
+    call NUOPC_Realize(state=exportState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
 
+    !--------------------------------------------------------------------------
+    ! fill export with some data for reference
+    !--------------------------------------------------------------------------
+    call ESMF_StateGet(exportState, itemName="A", field=field, rc=rc)
+    call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
+    dataPtr = 3.0d0
+
+    call ESMF_StateGet(exportState, itemName="T", field=field, rc=rc)
+    call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
+    dataPtr = 4.0d0
+
+    if (local_verbose) print *, "OCN::InitializeP2:: finished."
 
   end subroutine InitializeP2
   
@@ -333,10 +335,18 @@ module OCN
     type(ESMF_TimeInterval)     :: timeStep
     character(len=160)          :: msgString
 
-    real(kind=8), dimension(:), pointer :: X
+    type(ESMF_StateItem_Flag)   :: itemType
+    type(ESMF_Field)            :: field
+    real(ESMF_KIND_R8), pointer :: farrayPtr(:) => null()
+    real(ESMF_KIND_R8), pointer :: dataPtr_psi(:)   => null()
+    real(ESMF_KIND_R8), pointer :: dataPtr_theta(:)   => null()
+    real(ESMF_KIND_R8), pointer :: dataPtr_A(:)   => null()
+    real(ESMF_KIND_R8), pointer :: dataPtr_T(:)   => null()
+
     integer(kind=8) :: seconds
     real(kind=8) :: t,dt
     integer :: Nt
+    integer :: ndim
 
     logical :: local_verbose = .true.
 
@@ -391,34 +401,85 @@ module OCN
       file=__FILE__)) &
       return  ! bail out
 
+    !--------------------------------------------------------------------------
+    ! Set up data array farrayPtr
+    !--------------------------------------------------------------------------
+    call getDataPtr(importState,itemName='psi',dataPtr=dataPtr_psi)
+    call getDataPtr(importState,itemName='theta',dataPtr=dataPtr_theta)
+    call getDataPtr(exportState,itemName='A',dataPtr=dataPtr_A)
+    call getDataPtr(exportState,itemName='T',dataPtr=dataPtr_T)
+
+    ! Setup model input pointer to state data
+    ndim = 2*maooam_natm+2*maooam_nocn
+    print *, "ndim = ", ndim
+    allocate(farrayPtr(0:ndim))    ! user controlled allocation
+    farrayPtr(0) = f0
+    farrayPtr(si(1):ei(1)) = dataPtr_psi
+    farrayPtr(si(2):ei(2)) = dataPtr_theta
+    farrayPtr(si(3):ei(3)) = dataPtr_A
+    farrayPtr(si(4):ei(4)) = dataPtr_T
+
     ! START
     if (local_verbose) print *, "OCN::ModelAdvance:: calling ESMF_TimeGet..."
     call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
+      return
     t = real(seconds)
-
     if (local_verbose) print *, "OCN::ModelAdvance:: calling ESMF_TimeIntervalGet..."
     call ESMF_TimeIntervalGet(timeStep, s_i8=seconds, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
+      return
     dt = real(seconds)
     Nt = 1 !STEVE: just run one step of dt
 
-    !STEVE: I'm assuming all I need to do is update the data array referenced by the pointer that is registered with the state object
-!   print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
-!   print *, farrayP            ! print PET-local farrayA directly
     if (local_verbose) print *, "OCN::ModelAdvance:: calling maooam_ocean_run..."
-    allocate(X(36))
-    X = farrayP(:,1)
-    call maooam_ocean_run(X=X,t=t,dt=dt,Nt=Nt) !,component)
-    farrayP(:,1) = X
-!   print *, "ModelAdvance:: Post- maooam model run: farrayP = "
-!   print *, farrayP            ! print PET-local farrayA directly
+    call maooam_ocean_run(X=farrayPtr,t=t,dt=dt,Nt=Nt) !,component)
+
+    ! Only update the ocean field
+    f0 = farrayPtr(0)
+    dataPtr_A = farrayPtr(si(3):ei(3))
+    dataPtr_T = farrayPtr(si(4):ei(4))
+    deallocate(farrayPtr)
 
   end subroutine ModelAdvance
+
+  subroutine getDataPtr(state,itemName,dataPtr)
+    type(ESMF_State), intent(in)            :: state
+    character(*), intent(in)                :: itemName
+    real(ESMF_KIND_R8), pointer, intent(in) :: dataPtr(:)
+
+    integer                     :: rc
+    type(ESMF_Field)            :: field
+    type(ESMF_StateItem_Flag)   :: itemType
+    character(len=160)          :: msgString
+
+    logical :: local_verbose = .true.
+    
+    call ESMF_StateGet(state, itemName=itemName, itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(state, itemName=itemName, field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    endif
+    if (local_verbose) print *, "dataPtr (",trim(itemName),")"," = "
+    if (local_verbose) print *, dataPtr
+
+  end subroutine getDataPtr
 
   !-----------------------------------------------------------------------------
 

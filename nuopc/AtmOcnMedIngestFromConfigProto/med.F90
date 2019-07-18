@@ -18,8 +18,7 @@ module MED
   use NUOPC
   use NUOPC_Mediator, inheritMediator    => SetServices
   
-! use maooam_atmos_wrapper, only: maooam_atmos_initialize, maooam_atmos_run, maooam_atmos_finalize
-  use maooam_atmos_wrapper, only: maooam_natm !, maooam_nocn
+  use maooam_atmos_wrapper, only: maooam_natm
   use maooam_ocean_wrapper, only: maooam_nocn
 
   implicit none
@@ -156,30 +155,10 @@ module MED
       return  ! bail out
     
     !--------------------------------------------------------------------------
-    ! DO use namespaces for export to ATM:
+    ! Export:
     !--------------------------------------------------------------------------
-    call NUOPC_AddNamespace(exportState, namespace="ATM", nestedState=state, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
 
-    ! exportable field to ATM: sea_surface_temperature
-    if (local_verbose) print *, "MED::InitializeP1:: Calling NUOPC_Advertise for ocean_barotropic_streamfunction..."
-    call NUOPC_Advertise(state, StandardName="ocean_barotropic_streamfunction", name="A", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    if (local_verbose) print *, "MED::InitializeP1:: Calling NUOPC_Advertise for sea_water_temperature..."
-    call NUOPC_Advertise(state, StandardName="sea_water_temperature", name="T", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    ! exportable field: air_pressure_at_sea_level
+    ! exportable field: atmosphere_horizontal_streamfunction
     if (local_verbose) print *, "MED::InitializeP1:: Calling NUOPC_Advertise for atmosphere_horizontal_streamfunction..."
     call NUOPC_Advertise(exportState, StandardName="atmosphere_horizontal_streamfunction", name="psi", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -187,8 +166,32 @@ module MED
       file=__FILE__)) &
       return  ! bail out
 
+    ! exportable field: air_temperature
     if (local_verbose) print *, "MED::InitializeP1:: Calling NUOPC_Advertise for air_temperature..."
     call NUOPC_Advertise(exportState, StandardName="air_temperature", name="theta", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! DO use namespaces for export to ATM:
+    call NUOPC_AddNamespace(exportState, namespace="ATM", nestedState=state, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! exportable field to ATM: ocean_barotropic_streamfunction
+    if (local_verbose) print *, "MED::InitializeP1:: Calling NUOPC_Advertise for ocean_barotropic_streamfunction..."
+    call NUOPC_Advertise(state, StandardName="ocean_barotropic_streamfunction", name="A", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! exportable field to ATM: sea_water_temperature
+    if (local_verbose) print *, "MED::InitializeP1:: Calling NUOPC_Advertise for sea_water_temperature..."
+    call NUOPC_Advertise(state, StandardName="sea_water_temperature", name="T", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -223,37 +226,45 @@ module MED
     ! Set up ESMF grid objects
     !--------------------------------------------------------------------------
 
-    gridOcn = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_nocn,1/), name="ocean_grid", rc=rc)
+    ! create a distribution Grid object
+    distgridAtm = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_natm/), rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-    gridAtm = ESMF_GridCreateNoPeriDim(minIndex=(/1,1/), maxIndex=(/maooam_natm,1/), name="atmos_grid", rc=rc)
+    ! Create the Grid objects
+    gridAtm = ESMF_GridCreate(distgrid=distgridAtm, name="atmos_grid", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
+    ! create a distribution Grid object
+    distgridOcn = ESMF_DistGridCreate(minIndex=(/1/), maxIndex=(/maooam_nocn/), rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! Create the Grid objects
+    gridOcn = ESMF_GridCreate(distgrid=distgridOcn, name="ocean_grid", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !--------------------------------------------------------------------------
     ! Imports
-    field = ESMF_FieldCreate(name="T", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call NUOPC_Realize(state=importState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    !--------------------------------------------------------------------------
 
-    ! importable array: Ocean streamfunction
-    field = ESMF_FieldCreate(name="A", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    ! importable field: atmosphere_streafunction
+    field = ESMF_FieldCreate(name="psi", grid=gridAtm, typekind=ESMF_TYPEKIND_R8, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    call NUOPC_Realize(state=importState, field=field, rc=rc)
+    call NUOPC_Realize(importState, field=field, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -271,41 +282,33 @@ module MED
       file=__FILE__)) &
       return  ! bail out
     
-    ! importable field: atmosphere_streafunction
-    field = ESMF_FieldCreate(name="psi", grid=gridAtm, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    ! importable array: Ocean streamfunction
+    field = ESMF_FieldCreate(name="A", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    call NUOPC_Realize(importState, field=field, rc=rc)
+    call NUOPC_Realize(state=importState, field=field, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
 
-    ! exportable field: sea_surface_temperature
+    ! importable field: sea_surface_temperature
     field = ESMF_FieldCreate(name="T", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
-    ! exportable field: ocean_streamfunction
-    field = ESMF_FieldCreate(name="A", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    call NUOPC_Realize(state=importState, field=field, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
+      return  ! bail out
 
-    ! need to get ATM nestedState first because of namespace
-    call ESMF_StateGet(exportState, itemName="ATM", nestedState=state, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call NUOPC_Realize(state, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+    !--------------------------------------------------------------------------
+    ! Exports
+    !--------------------------------------------------------------------------
 
     ! exportable field: atmosphere_streamfunction
     field = ESMF_FieldCreate(name="psi", grid=gridAtm, typekind=ESMF_TYPEKIND_R8, rc=rc)
@@ -330,6 +333,38 @@ module MED
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
+    ! need to get ATM nestedState first because of namespace
+    call ESMF_StateGet(exportState, itemName="ATM", nestedState=state, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! exportable field: sea_surface_temperature
+    field = ESMF_FieldCreate(name="T", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    call NUOPC_Realize(state, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! exportable field: ocean_streamfunction
+    field = ESMF_FieldCreate(name="A", grid=gridOcn, typekind=ESMF_TYPEKIND_R8, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return
+    call NUOPC_Realize(state, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
 
   end subroutine InitializeP2
   
@@ -469,31 +504,29 @@ module MED
     currTime = currTime - timeStep
 
     ! Here is where the TEST_WITH_CONDITIONAL_SENDING_FIELDS_on magic is 
-    ! really implemented. For purpose of demonstraction, every time that the
+    ! really implemented. For purpose of demonstration, every time that the
     ! currTime is 30mins past the hour, ONLY send valid fields over to the 
     ! ATM component. All other times valid fields are sent to ALL components.
     
-    call ESMF_TimeGet(currTime, &
-      yy=yy, mm=mm, dd=dd, h=h, m=m, s=s, ms=ms, us=us, ns=ns, rc=rc)
+    call ESMF_TimeGet(currTime, yy=yy, mm=mm, dd=dd, h=h, m=m, s=s, ms=ms, us=us, ns=ns, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
       
-    if (m==30) then
-      ! 30min past the hour -> only send valid fields to ATM
+    if (s==30) then
+      ! 30sec past the minute -> only send valid fields to ATM
       
       ! FIRST: invalidate all of the fields in the exportState, because the
       ! generic mediator code will have applied currTime stamp on all of 
       ! them already.
-      call ESMF_TimeSet(invalidTime, yy=99999999, mm=01, dd=01, &
-        h=00, m=00, s=00, rc=rc)
+      call ESMF_TimeSet(invalidTime, yy=99999999, mm=01, dd=01, h=00, m=00, s=00, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &
         return  ! bail out
-!     call NUOPC_SetTimestamp(state=exportState, time=invalidTime, rc=rc)
-      call NUOPC_UpdateTimestamp(state=exportState, clock=clock, rc=rc)
+      call NUOPC_SetTimestamp(state=exportState, time=invalidTime, rc=rc)
+!     call NUOPC_UpdateTimestamp(state=exportState, clock=clock, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=trim(name)//":"//__FILE__)) &
         return  ! bail out
@@ -505,8 +538,8 @@ module MED
         file=__FILE__)) &
         return  ! bail out
       ! update timestamp on the ATM nestedState
-!     call NUOPC_SetTimestamp(state=state, time=currTime, rc=rc)
-      call NUOPC_UpdateTimestamp(state=state, clock=clock, rc=rc)
+      call NUOPC_SetTimestamp(state=state, time=currTime, rc=rc)
+!     call NUOPC_UpdateTimestamp(state=state, clock=clock, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=trim(name)//":"//__FILE__)) &
         return  ! bail out
@@ -515,8 +548,8 @@ module MED
       ! other times send valid fields to ALL components
 
       ! update timestamp on full exportState
-!     call NUOPC_SetTimestamp(state=exportState, time=currTime, rc=rc)
-      call NUOPC_UpdateTimestamp(state=exportState, clock=clock, rc=rc)
+      call NUOPC_SetTimestamp(state=exportState, time=currTime, rc=rc)
+!     call NUOPC_UpdateTimestamp(state=exportState, clock=clock, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, file=trim(name)//":"//__FILE__)) &
         return  ! bail out
