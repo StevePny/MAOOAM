@@ -397,217 +397,101 @@ module MED
       return  ! bail out
 
     !--------------------------------------------------------------------------
-    !STEVE: Give the ocean fields to the atmosphere
+    !STEVE: Transfer the import fields to export fields
     !--------------------------------------------------------------------------
-
-    ! Ocean streamfunction import/export:
-
-    if (local_Verbose) print *, "MED::MediatorAdvance:: calling ESMF_StateGet A..."
-    call ESMF_StateGet(importState, itemName="A", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(importState, itemName="A", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_im, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    else
-      stop 3
-    endif
-
-    call ESMF_StateGet(exportState, itemName="A", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(exportState, itemName="A", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_ex, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    else
-      stop 3
-    endif
-
-    dataPtr_ex = dataPtr_im
-
-    ! Ocean temperature import/export:
-
-    if (local_Verbose) print *, "MED::MediatorAdvance:: calling ESMF_StateGet T..."
-    call ESMF_StateGet(importState, itemName="T", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(importState, itemName="T", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_im, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    else
-      stop 4
-    endif
-
-    call ESMF_StateGet(exportState, itemName="T", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(exportState, itemName="T", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_ex, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    else
-      stop 4
-    endif
-
-    dataPtr_ex = dataPtr_im
+    call im2ex(importState,exportState,"psi")
+    call im2ex(importState,exportState,"theta")
+    call im2ex(importState,exportState,"A")
+    call im2ex(importState,exportState,"T")
 
     !--------------------------------------------------------------------------
-    !STEVE: Give the atmosphere fields to the ocean
+    ! Get timing info and print to make sure it's valid
     !--------------------------------------------------------------------------
-
-    ! Atmosphere streamfunction import/export:
-
-    if (local_Verbose) print *, "MED::MediatorAdvance:: calling ESMF_StateGet psi..."
-    call ESMF_StateGet(importState, itemName="psi", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(importState, itemName="psi", field=field, rc=rc)
+    if (local_verbose) then
+      call ESMF_ClockGet(clock, startTime=startTime, currTime=currTime, timeStep=timeStep, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &
         return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_im, rc=rc)
+      call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &
-        return  ! bail out
-    else
-      stop 1
+        return
+      t = dble(seconds)
+      call ESMF_TimeIntervalGet(timeStep, s_i8=seconds, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return
+      dt = dble(seconds)
+  
+      print *, "MED::MediatorAdvance:  t = ", t
+      print *, "MED::MediatorAdvance: dt = ", dt
     endif
-
-    call ESMF_StateGet(exportState, itemName="psi", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(exportState, itemName="psi", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_ex, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    else
-      stop 1
-    endif
-
-    dataPtr_ex = dataPtr_im
-
-    ! Atmosphere temperature import/export:
-
-    if (local_Verbose) print *, "MED::MediatorAdvance:: calling ESMF_StateGet theta..."
-    call ESMF_StateGet(importState, itemName="theta", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(importState, itemName="theta", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_im, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    else
-      stop 2
-    endif
-
-    call ESMF_StateGet(exportState, itemName="theta", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(exportState, itemName="theta", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_ex, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    else
-      stop 2
-    endif
-
-    dataPtr_ex = dataPtr_im
-
-    !--------------------------------------------------------------------------
-    ! Get timing info
-    !--------------------------------------------------------------------------
-    call ESMF_ClockGet(clock, startTime=startTime, currTime=currTime, timeStep=timeStep, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return
-    t = dble(seconds)
-    call ESMF_TimeIntervalGet(timeStep, s_i8=seconds, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return
-    dt = dble(seconds)
-
-    print *, "MED::MediatorAdvance:  t = ", t
-    print *, "MED::MediatorAdvance: dt = ", dt
 
   end subroutine MediatorAdvance
+
+  subroutine im2ex(importState,exportState,itemName)
+    type(ESMF_State), intent(in) :: importState
+    type(ESMF_State), intent(inout) :: exportState
+    character(*), intent(in) :: itemName
+
+    type(ESMF_Field)            :: field
+    real(ESMF_KIND_R8), pointer :: dataPtr_im(:)   => null()
+    real(ESMF_KIND_R8), pointer :: dataPtr_ex(:)   => null()
+
+    type(ESMF_StateItem_Flag)   :: itemType
+    integer :: rc
+    logical :: local_verbose = .true.
+
+    if (local_Verbose) print *, "MED::im2ex:: calling ESMF_StateGet for variable: ", trim(itemName)
+    call ESMF_StateGet(importState, itemName=itemName, itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(importState, itemName=itemName, field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr_im, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      print *, "MED::im2ex:: importState ESMF_STATEITEM_NOTFOUND : ", trim(itemName)
+      stop 5
+    endif
+
+    call ESMF_StateGet(exportState, itemName=itemName, itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(exportState, itemName=itemName, field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr_ex, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      print *, "MED::im2ex:: exportState ESMF_STATEITEM_NOTFOUND : ", trim(itemName)
+      stop 6
+    endif
+
+    dataPtr_ex = dataPtr_im
+
+    if (local_verbose) print *, "MED::im2ex:: dataPtr_ex = ", dataPtr_ex
+
+  end subroutine im2ex
 
 end module MED

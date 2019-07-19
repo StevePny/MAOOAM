@@ -62,12 +62,13 @@ module OCN
       return  ! bail out
     
     ! attach specializing method(s)
-    call NUOPC_CompSpecialize(model, specLabel=label_SetClock, &
-      specRoutine=SetClock, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
+!   call NUOPC_CompSpecialize(model, specLabel=label_SetClock, &
+!     specRoutine=SetClock, rc=rc)
+!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+!     line=__LINE__, &
+!     file=__FILE__)) &
+!     return  ! bail out
+
     call NUOPC_CompSpecialize(model, specLabel=label_Advance, &
       specRoutine=ModelAdvance, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -309,11 +310,12 @@ module OCN
     ! here: parent Clock and stability timeStep determine actual model timeStep
     !TODO: stabilityTimeStep should be read in from configuation
     !TODO: or computed from internal Grid information
-    call ESMF_TimeIntervalSet(stabilityTimeStep, m=5, rc=rc) ! 5 minute steps
+    call ESMF_TimeIntervalSet(stabilityTimeStep, s=10, rc=rc) ! 10 second steps
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
       return  ! bail out
+
     call NUOPC_CompSetClock(model, clock, stabilityTimeStep, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
@@ -350,7 +352,7 @@ module OCN
 
     logical :: local_verbose = .true.
 
-    if (local_verbose) print *, "OCN::ModelAdvance :: commencing..."
+    if (local_verbose) print *, "OCN::ModelAdvance:: commencing..."
 
     rc = ESMF_SUCCESS
     
@@ -402,6 +404,13 @@ module OCN
       return  ! bail out
 
     !--------------------------------------------------------------------------
+    ! Setup model input pointer to state data
+    !--------------------------------------------------------------------------
+    ndim = 2*maooam_natm+2*maooam_nocn
+    print *, "ndim = ", ndim
+    allocate(farrayPtr(0:ndim))    ! user controlled allocation
+
+    !--------------------------------------------------------------------------
     ! Set up data array farrayPtr
     !--------------------------------------------------------------------------
     call getDataPtr(importState,itemName='psi',dataPtr=dataPtr_psi)
@@ -409,17 +418,16 @@ module OCN
     call getDataPtr(exportState,itemName='A',dataPtr=dataPtr_A)
     call getDataPtr(exportState,itemName='T',dataPtr=dataPtr_T)
 
-    ! Setup model input pointer to state data
-    ndim = 2*maooam_natm+2*maooam_nocn
-    print *, "ndim = ", ndim
-    allocate(farrayPtr(0:ndim))    ! user controlled allocation
     farrayPtr(0) = f0
     farrayPtr(si(1):ei(1)) = dataPtr_psi
     farrayPtr(si(2):ei(2)) = dataPtr_theta
     farrayPtr(si(3):ei(3)) = dataPtr_A
     farrayPtr(si(4):ei(4)) = dataPtr_T
 
-    ! START
+    !--------------------------------------------------------------------------
+    ! Run model integration/step
+    !--------------------------------------------------------------------------
+
     if (local_verbose) print *, "OCN::ModelAdvance:: calling ESMF_TimeGet..."
     call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -436,7 +444,15 @@ module OCN
     dt = real(seconds)
     Nt = 1 !STEVE: just run one step of dt
 
+    !--------------------------------------------------------------------------
+    ! Step the model
+    !--------------------------------------------------------------------------
+    t = t/1000
+    dt = dt/1000
+    print *, "Using t = ", t
+    print *, "Using dt = ", dt
     if (local_verbose) print *, "OCN::ModelAdvance:: calling maooam_ocean_run..."
+
     call maooam_ocean_run(X=farrayPtr,t=t,dt=dt,Nt=Nt) !,component)
 
     ! Only update the ocean field
@@ -448,7 +464,7 @@ module OCN
   end subroutine ModelAdvance
 
   subroutine getDataPtr(state,itemName,dataPtr)
-    type(ESMF_State), intent(in)            :: state
+    type(ESMF_State), intent(inout)         :: state
     character(*), intent(in)                :: itemName
     real(ESMF_KIND_R8), pointer, intent(in) :: dataPtr(:)
 
@@ -458,6 +474,8 @@ module OCN
     character(len=160)          :: msgString
 
     logical :: local_verbose = .true.
+
+    if (local_verbose) print *, "OCN::getDataPtr ..."
     
     call ESMF_StateGet(state, itemName=itemName, itemType=itemType, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -476,7 +494,8 @@ module OCN
         file=__FILE__)) &
         return  ! bail out
     endif
-    if (local_verbose) print *, "dataPtr (",trim(itemName),")"," = "
+
+    if (local_verbose) print *, "OCN::dataPtr (",trim(itemName),")"," = "
     if (local_verbose) print *, dataPtr
 
   end subroutine getDataPtr
@@ -512,8 +531,7 @@ module OCN
       return  ! bail out
 
     ! set up invalid time (by convention)
-    call ESMF_TimeSet(invalidTime, yy=99999999, mm=01, dd=01, &
-      h=00, m=00, s=00, rc=rc)
+    call ESMF_TimeSet(invalidTime, yy=99999999, mm=01, dd=01, h=00, m=00, s=00, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -531,17 +549,17 @@ module OCN
       return  ! bail out
 
     do i=1, size(fieldList)
+
       timeCheck = NUOPC_IsAtTime(fieldList(i), invalidTime, rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
         line=__LINE__, &
         file=__FILE__)) &
         return  ! bail out
+
       if (timeCheck) then
         ! The field is at invalidTime
-
         ! -> In a real application mark the field with a flag as invalid 
         !    so the actual model code can act accordingly.
-
         ! Here for purpose of demonstration just log a message and continue on.
       
         call ESMF_LogWrite("OCN: detected import field at invalidTime", &
@@ -560,6 +578,7 @@ module OCN
           line=__LINE__, &
           file=__FILE__)) &
           return  ! bail out
+
         if (.not.timeCheck) then
           !TODO: introduce and use INCOMPATIBILITY return codes!!!!
           call ESMF_LogSetError(ESMF_RC_ARG_BAD, &

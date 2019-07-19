@@ -8,7 +8,7 @@
 ! Licensed under the University of Illinois-NCSA License.
 !==============================================================================
 
-! #define TESTAUTOADDCONNECTORS
+#define TESTAUTOADDCONNECTORS
 #define FFLOG
 
 module ESM

@@ -68,36 +68,36 @@
 
 #-------------------------------------------------------------------------------
 # A concurrent run sequence
-#runSeq::
-#    @20:120
-#      MED
-#      MED -> ATM :remapMethod=redist
-#      MED -> OCN :remapMethod=redist
-#      ATM
-#      OCN
-#      ATM -> MED :remapMethod=redist
-#      OCN -> MED :remapMethod=redist
-#   @
-#::
+runSeq::
+    @10:60
+      MED
+      MED -> ATM :remapMethod=redist
+      MED -> OCN :remapMethod=redist
+      ATM
+      OCN
+      ATM -> MED :remapMethod=redist
+      OCN -> MED :remapMethod=redist
+   @
+::
 
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------
 # A sequential run sequence
-runSeq::
-    @20             # 20sec time step 
-      MED
-      MED -> ATM :remapMethod=redist
-      ATM
-      ATM -> MED :remapMethod=redist
-      MED
-      MED
-      MED -> OCN :remapMethod=redist
-      OCN
-      OCN -> MED :remapMethod=redist
-      MED
-    @
-::
+#runSeq::
+#    @20             # 20sec time step 
+#      MED
+#      MED -> ATM :remapMethod=redist
+#      ATM
+#      ATM -> MED :remapMethod=redist
+#      MED
+#      MED
+#      MED -> OCN :remapMethod=redist
+#      OCN
+#      OCN -> MED :remapMethod=redist
+#      MED
+#    @
+#::
 #-------------------------------------------------------------------------------
 
 #-------------------------------------------------------------------------------

@@ -111,26 +111,6 @@ module ATM
       return  ! bail out
     
     !-------------------------------------------------------------------------- 
-    ! importable field: ocean_barotropic_streamfunction
-    !-------------------------------------------------------------------------- 
-    if (local_verbose) print *, "ATM::InitializeP1:: Calling NUOPC_Advertise for ocean_barotropic_streamfunction..."
-    call NUOPC_Advertise(importState, StandardName="ocean_barotropic_streamfunction", name="A", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    !-------------------------------------------------------------------------- 
-    ! importable field: sea_water_temperature
-    !-------------------------------------------------------------------------- 
-    if (local_verbose) print *, "ATM::InitializeP1:: Calling NUOPC_Advertise for sea_water_temperature..."
-    call NUOPC_Advertise(importState, StandardName="sea_water_temperature", name="T", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    !-------------------------------------------------------------------------- 
     ! exportable field: atmosphere_horizontal_streamfunction
     !-------------------------------------------------------------------------- 
     if (local_verbose) print *, "ATM::InitializeP1:: Calling NUOPC_Advertise for atmosphere_horizontal_streamfunction..."
@@ -145,6 +125,26 @@ module ATM
     !-------------------------------------------------------------------------- 
     if (local_verbose) print *, "ATM::InitializeP1:: Calling NUOPC_Advertise for air_temperature..."
     call NUOPC_Advertise(exportState, StandardName="air_temperature", name="theta", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !-------------------------------------------------------------------------- 
+    ! importable field: ocean_barotropic_streamfunction
+    !-------------------------------------------------------------------------- 
+    if (local_verbose) print *, "ATM::InitializeP1:: Calling NUOPC_Advertise for ocean_barotropic_streamfunction..."
+    call NUOPC_Advertise(importState, StandardName="ocean_barotropic_streamfunction", name="A", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !-------------------------------------------------------------------------- 
+    ! importable field: sea_water_temperature
+    !-------------------------------------------------------------------------- 
+    if (local_verbose) print *, "ATM::InitializeP1:: Calling NUOPC_Advertise for sea_water_temperature..."
+    call NUOPC_Advertise(importState, StandardName="sea_water_temperature", name="T", rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
       line=__LINE__, &
       file=__FILE__)) &
@@ -224,38 +224,6 @@ module ATM
       return  ! bail out
 
     !--------------------------------------------------------------------------
-    ! Get the importable arrays
-    !--------------------------------------------------------------------------
-
-    ! importable array: Ocean streamfunction
-    if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for A..."
-    field = ESMF_FieldCreate(grid=gridOcn, typekind=ESMF_TYPEKIND_R8, name="A", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (local_verbose) print *, "ATM::InitializeP2:: Finished ESMF_FieldCreate for A."
-    call NUOPC_Realize(state=importState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    ! importable array: Ocean temperature
-    if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for T..."
-    field = ESMF_FieldCreate(grid=gridOcn, typekind=ESMF_TYPEKIND_R8, name="T", rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (local_verbose) print *, "ATM::InitializeP2:: Finished ESMF_FieldCreate for T."
-    call NUOPC_Realize(state=importState, field=field, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-
-    !--------------------------------------------------------------------------
     ! Get the exportable arrays
     !--------------------------------------------------------------------------
 
@@ -288,6 +256,38 @@ module ATM
       return  ! bail out
 
     !--------------------------------------------------------------------------
+    ! Get the importable arrays
+    !--------------------------------------------------------------------------
+
+    ! importable array: Ocean streamfunction
+    if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for A..."
+    field = ESMF_FieldCreate(grid=gridOcn, typekind=ESMF_TYPEKIND_R8, name="A", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (local_verbose) print *, "ATM::InitializeP2:: Finished ESMF_FieldCreate for A."
+    call NUOPC_Realize(state=importState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    ! importable array: Ocean temperature
+    if (local_verbose) print *, "ATM::InitializeP2:: Calling ESMF_FieldCreate for T..."
+    field = ESMF_FieldCreate(grid=gridOcn, typekind=ESMF_TYPEKIND_R8, name="T", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (local_verbose) print *, "ATM::InitializeP2:: Finished ESMF_FieldCreate for T."
+    call NUOPC_Realize(state=importState, field=field, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+
+    !--------------------------------------------------------------------------
     ! fill export with some data for reference
     !--------------------------------------------------------------------------
     call ESMF_StateGet(exportState, itemName="psi", field=field, rc=rc)
@@ -297,6 +297,8 @@ module ATM
     call ESMF_StateGet(exportState, itemName="theta", field=field, rc=rc)
     call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
     dataPtr = 2.0d0
+
+    if (local_verbose) print *, "ATM::InitializeP2:: finished."
 
   end subroutine InitializeP2
   
@@ -370,6 +372,13 @@ module ATM
       return  ! bail out
 
     !--------------------------------------------------------------------------
+    ! Setup model input pointer to state data
+    !--------------------------------------------------------------------------
+    ndim = 2*maooam_natm+2*maooam_nocn
+    print *, "ndim = ", ndim
+    allocate(farrayPtr(0:ndim))    ! user controlled allocation
+
+    !--------------------------------------------------------------------------
     ! Set up data array farrayPtr
     !--------------------------------------------------------------------------
     call getDataPtr(exportState,itemName='psi',dataPtr=dataPtr_psi)
@@ -377,18 +386,16 @@ module ATM
     call getDataPtr(importState,itemName='A',dataPtr=dataPtr_A)
     call getDataPtr(importState,itemName='T',dataPtr=dataPtr_T)
 
-    ! Setup model input pointer to state data
-    ndim = 2*maooam_natm+2*maooam_nocn
-    print *, "ndim = ", ndim
-    allocate(farrayPtr(0:ndim))    ! user controlled allocation
     farrayPtr(0) = f0
     farrayPtr(si(1):ei(1)) = dataPtr_psi
     farrayPtr(si(2):ei(2)) = dataPtr_theta
     farrayPtr(si(3):ei(3)) = dataPtr_A
     farrayPtr(si(4):ei(4)) = dataPtr_T
+    if (local_verbose) print *, "farrayPtr = "
+    if (local_verbose) print *, farrayPtr
 
     !--------------------------------------------------------------------------
-    !STEVE: Assuming the model goes here:
+    ! Get time information
     !--------------------------------------------------------------------------
     call ESMF_ClockGet(clock, startTime=startTime, currTime=currTime, timeStep=timeStep, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -410,7 +417,14 @@ module ATM
     dt = dble(seconds)
     Nt = 1 !STEVE: just run one step of dt
 
-    !STEVE: I'm assuming all I need to do is update the data array referenced by the pointer that is registered with the state object
+    !--------------------------------------------------------------------------
+    ! Step the model
+    !--------------------------------------------------------------------------
+    t = t/1000
+    dt = dt/1000
+    print *, "Using t = ", t
+    print *, "Using dt = ", dt
+
     print *, "ModelAdvance:: Pre- maooam model run..."
     call maooam_atmos_run(X=farrayPtr,t=t,dt=dt,Nt=Nt) !,component)
     print *, "ModelAdvance:: Post-maooam model run."
@@ -424,7 +438,7 @@ module ATM
   end subroutine ModelAdvance
 
   subroutine getDataPtr(state,itemName,dataPtr)
-    type(ESMF_State), intent(in)            :: state
+    type(ESMF_State), intent(inout)         :: state
     character(*), intent(in)                :: itemName
     real(ESMF_KIND_R8), pointer, intent(in) :: dataPtr(:)
 
@@ -434,6 +448,8 @@ module ATM
     character(len=160)          :: msgString
 
     logical :: local_verbose = .true.
+
+    if (local_verbose) print *, "ATM::getDataPtr ..."
     
     call ESMF_StateGet(state, itemName=itemName, itemType=itemType, rc=rc)
     if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
@@ -452,7 +468,7 @@ module ATM
         file=__FILE__)) &
         return  ! bail out
     endif
-    if (local_verbose) print *, "dataPtr (",trim(itemName),")"," = "
+    if (local_verbose) print *, "ATM::dataPtr (",trim(itemName),")"," = "
     if (local_verbose) print *, dataPtr
 
   end subroutine getDataPtr
