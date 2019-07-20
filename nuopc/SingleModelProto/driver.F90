@@ -64,13 +64,13 @@ module driver
     if (local_verbose) print *, "driver::SetServices:: finished NUOPC_CompSpecialize."
 
     ! set driver verbosity
-!   if (local_verbose) print *, "driver::SetServices:: calling NUOPC_CompAttributeSet..."
-!   call NUOPC_CompAttributeSet(driver, name="Verbosity", value="low", rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
-!   if (local_verbose) print *, "driver::SetServices:: finished NUOPC_CompAttributeSet."
+    if (local_verbose) print *, "driver::SetServices:: calling NUOPC_CompAttributeSet..."
+    call NUOPC_CompAttributeSet(driver, name="Verbosity", value="low", rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (local_verbose) print *, "driver::SetServices:: finished NUOPC_CompAttributeSet."
 
   end subroutine SetServices
 

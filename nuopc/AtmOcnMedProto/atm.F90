@@ -333,9 +333,12 @@ module ATM
     integer :: ndim
 
     logical :: local_verbose = .true.
+    logical :: local_writeout = .true.
+    character(14) :: outfile = 'evol_atmos.dat'
+    integer :: iunit
+    integer :: fid = 10
 
     if (local_verbose) print *, "ATM::ModelAdvance :: commencing..."
-
 
     rc = ESMF_SUCCESS
     
@@ -423,15 +426,23 @@ module ATM
     dt = dble(seconds)
     Nt = 1 !STEVE: just run one step of dt
 
+    t = t/1000
+    dt = dt/1000
+    if (local_verbose) print *, "Using t = ", t
+    if (local_verbose) print *, "Using dt = ", dt
+
     !--------------------------------------------------------------------------
     ! Step the model
     !--------------------------------------------------------------------------
-    t = t/1000
-    dt = dt/1000
-    print *, "Using t = ", t
-    print *, "Using dt = ", dt
-
+    if (local_verbose) print *, "ATM::ModelAdvance:: calling maooam_atmos_run..."
     call maooam_atmos_run(X=farrayPtr,t=t,dt=dt,Nt=Nt) !,component)
+
+    ! Write to file
+    if (local_writeout) then
+      inquire(file=outfile, number=iunit)
+      if (iunit < 0) open(fid,file=outfile)
+      write(fid,*) t, farrayPtr(1:ndim)
+    endif
 
     ! Only update the atmospheric field
     f0 = farrayPtr(0)

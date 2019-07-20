@@ -339,6 +339,10 @@ module OCN
     integer :: ndim
 
     logical :: local_verbose = .true.
+    logical :: local_writeout = .true.
+    character(14) :: outfile = 'evol_ocean.dat'
+    integer :: iunit
+    integer :: fid = 11
 
     rc = ESMF_SUCCESS
     
@@ -412,7 +416,7 @@ module OCN
     if (local_verbose) print *, farrayPtr
 
     !--------------------------------------------------------------------------
-    ! Run model integration/step
+    ! Set timing
     !--------------------------------------------------------------------------
     if (local_verbose) print *, "OCN::ModelAdvance:: calling ESMF_TimeGet..."
     call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
@@ -430,8 +434,23 @@ module OCN
     dt = dble(seconds)
     Nt = 1 !STEVE: just run one step of dt
 
+    t = t/1000
+    dt = dt/1000
+    if (local_verbose) print *, "Using t = ", t
+    if (local_verbose) print *, "Using dt = ", dt
+
+    !--------------------------------------------------------------------------
+    ! Run model integration/step
+    !--------------------------------------------------------------------------
     if (local_verbose) print *, "OCN::ModelAdvance:: calling maooam_ocean_run..."
     call maooam_ocean_run(X=farrayPtr,t=t,dt=dt,Nt=Nt) !,component)
+
+    ! Write to file
+    if (local_writeout) then
+      inquire(file=outfile, number=iunit)
+      if (iunit < 0) open(fid,file=outfile)
+      write(fid,*) t, farrayPtr(1:ndim)
+    endif
 
     ! Only update the ocean field
     f0 = farrayPtr(0)

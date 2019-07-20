@@ -351,6 +351,10 @@ module OCN
     integer :: ndim
 
     logical :: local_verbose = .true.
+    logical :: local_writeout = .true.
+    character(14) :: outfile = 'evol_ocean.dat'
+    integer :: iunit
+    integer :: fid = 11
 
     if (local_verbose) print *, "OCN::ModelAdvance:: commencing..."
 
@@ -442,18 +446,26 @@ module OCN
       file=__FILE__)) &
       return
     dt = real(seconds)
+
     Nt = 1 !STEVE: just run one step of dt
 
-    !--------------------------------------------------------------------------
-    ! Step the model
-    !--------------------------------------------------------------------------
     t = t/1000
     dt = dt/1000
     print *, "Using t = ", t
     print *, "Using dt = ", dt
-    if (local_verbose) print *, "OCN::ModelAdvance:: calling maooam_ocean_run..."
 
+    !--------------------------------------------------------------------------
+    ! Step the model
+    !--------------------------------------------------------------------------
+    if (local_verbose) print *, "OCN::ModelAdvance:: calling maooam_ocean_run..."
     call maooam_ocean_run(X=farrayPtr,t=t,dt=dt,Nt=Nt) !,component)
+
+    ! Write to file
+    if (local_writeout) then
+      inquire(file=outfile, number=iunit)
+      if (iunit < 0) open(fid,file=outfile)
+      write(fid,*) t, farrayPtr(1:ndim)
+    endif
 
     ! Only update the ocean field
     f0 = farrayPtr(0)

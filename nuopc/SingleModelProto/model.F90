@@ -79,13 +79,6 @@ module MODEL
       return  ! bail out
     if (local_verbose) print *, "SetServices:: Finished NUOPC_CompSpecialize."
 
-    !STEVE: add a finalize routine 
-!   call NUOPC_CompSetEntryPoint(model, ESMF_METHOD_FINALIZE, phaseLabelList=(//), userRoutine=Finalize, rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
-
     print *, "SetServices:: Finished SetServices."
     
   end subroutine SetServices
@@ -209,19 +202,6 @@ module MODEL
     ei(3) = maooam_natm*2 + maooam_nocn
     si(4) = maooam_natm*2 + maooam_nocn + 1
     ei(4) = maooam_natm*2 + maooam_nocn + maooam_nocn
-
-    !--------------------------------------------------------------------------
-    ! create and open the config
-    !--------------------------------------------------------------------------
-!   config = ESMF_ConfigCreate(rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
-!     return  ! bail out
-!   call ESMF_ConfigLoadFile(config, "test.config", rc=rc)
-!   if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-!     line=__LINE__, &
-!     file=__FILE__)) &
 
     !--------------------------------------------------------------------------
     ! Set up ESMF grid objects
@@ -367,7 +347,11 @@ module MODEL
     integer :: ndim
     integer :: j
 
-    logical :: local_verbose = .true.
+    logical :: local_verbose  = .true.
+    logical :: local_writeout = .true.
+    character(14) :: outfile = 'evol_field.dat'
+    integer :: iunit
+    integer :: fid = 10
 
     if (local_verbose) print *, "ModelAdvance :: commencing..."
 
@@ -421,111 +405,24 @@ module MODEL
     !--------------------------------------------------------------------------
     ! Get model input data
     !--------------------------------------------------------------------------
-
     ndim = 2*maooam_natm+2*maooam_nocn
     allocate(farrayPtr(0:ndim))    ! user controlled allocation
+
+    !--------------------------------------------------------------------------
+    ! Set up data array farrayPtr
+    !--------------------------------------------------------------------------
+    call getDataPtr(exportState,itemName='psi',dataPtr=dataPtr_psi)
+    call getDataPtr(exportState,itemName='theta',dataPtr=dataPtr_theta)
+    call getDataPtr(exportState,itemName='A',dataPtr=dataPtr_A)
+    call getDataPtr(exportState,itemName='T',dataPtr=dataPtr_T)
+
     farrayPtr(0) = f0
-
-    ! call ESMF_StateGet(), etc to get fields, bundles, arrays from import state.
-    call ESMF_StateGet(exportState, itemName="psi", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(exportState, itemName="psi", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_psi, rc=rc) 
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    endif
-    if (local_verbose) print *, "dataPtr (psi) = "
-    if (local_verbose) print *, dataPtr_psi
-!   farrayPtr(si:ei) => dataPtr
     farrayPtr(si(1):ei(1)) = dataPtr_psi
-    if (local_verbose) print *, "farrayPtr(",si(1),":",ei(1),") = "
-    if (local_verbose) print *, farrayPtr(si(1):ei(1))
-
-    call ESMF_StateGet(exportState, itemName="theta", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(exportState, itemName="theta", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_theta, rc=rc) 
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    endif
-    if (local_verbose) print *, "dataPtr (theta) = "
-    if (local_verbose) print *, dataPtr_theta
-!   farrayPtr(si:ei) => dataPtr
     farrayPtr(si(2):ei(2)) = dataPtr_theta
-    if (local_verbose) print *, "farrayPtr(",si(2),":",ei(2),") = "
-    if (local_verbose) print *, farrayPtr(si(2):ei(2))
-
-    call ESMF_StateGet(exportState, itemName="A", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(exportState, itemName="A", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_A, rc=rc) 
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    endif
-    if (local_verbose) print *, "dataPtr (A) = "
-    if (local_verbose) print *, dataPtr_A
-!   farrayPtr(si:ei) => dataPtr
     farrayPtr(si(3):ei(3)) = dataPtr_A
-    if (local_verbose) print *, "farrayPtr(",si(3),":",ei(3),") = "
-    if (local_verbose) print *, farrayPtr(si(4):ei(4))
-
-    call ESMF_StateGet(exportState, itemName="T", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(exportState, itemName="T", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_T, rc=rc) 
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    endif
-    if (local_verbose) print *, "dataPtr (T) = "
-    if (local_verbose) print *, dataPtr_T
-!   farrayPtr(si:ei) => dataPtr
     farrayPtr(si(4):ei(4)) = dataPtr_T
-    if (local_verbose) print *, "farrayPtr(",si(4),":",ei(4),") = "
-    if (local_verbose) print *, farrayPtr(si(4):ei(4))
-
-!   print *, "farrayPtr = "
-    if (local_verbose) print *, "farrayPtr(",si(1),":",ei(4),") = "
-    if (local_verbose) print *, farrayPtr(si(1):ei(4))
+    if (local_verbose) print *, "farrayPtr = "
+    if (local_verbose) print *, farrayPtr
 
     !----------------------------
     ! Model timing info
@@ -541,7 +438,6 @@ module MODEL
       line=__LINE__, &
       file=__FILE__)) &
       return
-
     t = dble(seconds)
     if (local_verbose) print *, "t seconds = ", seconds
 
@@ -550,21 +446,28 @@ module MODEL
       line=__LINE__, &
       file=__FILE__)) &
       return
-
     dt = dble(seconds)
     if (local_verbose) print *, "dt seconds = ", seconds
 
     Nt = 1 !STEVE: just run one step of dt
 
-!   print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
-!   print *, farrayP            ! print PET-local farrayA directly
     ! Transform seconds to model non-dimensional time (approximate)
-    t = t/1000
-    dt = dt/1000
+    t = (t/1000)
+    dt = (dt/1000)
     if (local_verbose) print *, "Using t = ", t
     if (local_verbose) print *, "Using dt = ", dt
 
-    call maooam_run(X=farrayPtr,t=t,dt=dt,Nt=Nt) !,component)
+    !----------------------------
+    ! Run the model step
+    !----------------------------
+    call maooam_run(X=farrayPtr,t=t,dt=dt,Nt=Nt)
+
+    ! Write to file
+    if (local_writeout) then
+      inquire(file=outfile, number=iunit) 
+      if (iunit < 0) open(fid,file=outfile)
+      write(fid,*) t, farrayPtr(1:ndim)
+    endif
 
     ! Fill export state here using ESMF_StateAdd(), etc
     f0 = farrayPtr(0)
@@ -573,27 +476,47 @@ module MODEL
     dataPtr_A = farrayPtr(si(3):ei(3))
     dataPtr_T = farrayPtr(si(4):ei(4))
 
-!   print *, "ModelAdvance:: Post- maooam model run: farrayPtr = "
-!   print *, farrayPtr       ! print PET-local farrayA directly
-    
     if (local_verbose) print *, "ModelAdvance:: finished."
     
   end subroutine ModelAdvance
 
-  subroutine Finalize(model,importState,exportState,clock,rc)
-    type(ESMF_GridComp)  :: model
-    type(ESMF_State)     :: importState, exportState
-    type(ESMF_Clock)     :: clock
-    integer, intent(out) :: rc
+  subroutine getDataPtr(state,itemName,dataPtr)
+    type(ESMF_State), intent(in)            :: state
+    character(*), intent(in)                :: itemName
+    real(ESMF_KIND_R8), pointer, intent(in) :: dataPtr(:)
 
-    !STEVE: ESMF pointer to store array data (i.e. model state)
-    type(ESMF_DistGrid)         :: distgrid       ! DistGrid object
-    type(ESMF_Field)            :: field          ! Field object
-    type(ESMF_Grid)             :: gridOut
+    integer                     :: rc
+    type(ESMF_Field)            :: field
+    type(ESMF_StateItem_Flag)   :: itemType
+    character(len=160)          :: msgString
 
-    ! Clean up
-    call ESMF_GridCompFinalize(model)
-    
-  end subroutine Finalize
+    logical :: local_verbose = .true.
+
+    if (local_verbose) print *, "MODEL::getDataPtr ..."
+
+    call ESMF_StateGet(state, itemName=itemName, itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(state, itemName=itemName, field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      print *, "MODEL::getDataPtr:: importState ESMF_STATEITEM_NOTFOUND : ", trim(itemName)
+      stop 8
+    endif
+    if (local_verbose) print *, "ATM::dataPtr (",trim(itemName),")"," = "
+    if (local_verbose) print *, dataPtr
+
+  end subroutine getDataPtr
 
 end module MODEL

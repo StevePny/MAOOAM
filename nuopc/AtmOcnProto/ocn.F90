@@ -358,6 +358,10 @@ module OCN
     integer :: ndim
 
     logical :: local_verbose = .true.
+    logical :: local_writeout = .true.
+    character(14) :: outfile = 'evol_ocean.dat'
+    integer :: iunit
+    integer :: fid = 11
 
     if (local_verbose) print *, "OCN::ModelAdvance :: commencing..."
 
@@ -421,96 +425,33 @@ module OCN
     !--------------------------------------------------------------------------
     ndim = 2*maooam_natm+2*maooam_nocn
     allocate(farrayPtr(0:ndim))    ! user controlled allocation
+
+    !--------------------------------------------------------------------------
+    ! Set up data array farrayPtr
+    !--------------------------------------------------------------------------
+    call getDataPtr(importState,itemName='psi',dataPtr=dataPtr_psi)
+    call getDataPtr(importState,itemName='theta',dataPtr=dataPtr_theta)
+    call getDataPtr(exportState,itemName='A',dataPtr=dataPtr_A)
+    call getDataPtr(exportState,itemName='T',dataPtr=dataPtr_T)
+
     farrayPtr(0) = f0
-
-    !--------------------------------------------------------------------------
-    !STEVE: try getting array from exportState:
-    !--------------------------------------------------------------------------
-
-    call ESMF_StateGet(exportState, itemName="A", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(exportState, itemName="A", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_A, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    endif
-    farrayPtr(si(3):ei(3)) = dataPtr_A
-
-    call ESMF_StateGet(exportState, itemName="T", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(exportState, itemName="T", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_T, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    endif
-    farrayPtr(si(4):ei(4)) = dataPtr_T
-
-    !--------------------------------------------------------------------------
-    !STEVE: try getting array from importState:
-    !--------------------------------------------------------------------------
-    call ESMF_StateGet(importState, itemName="psi", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(importState, itemName="psi", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_psi, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    endif
     farrayPtr(si(1):ei(1)) = dataPtr_psi
-
-    call ESMF_StateGet(importState, itemName="theta", itemType=itemType, rc=rc)
-    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-      line=__LINE__, &
-      file=__FILE__)) &
-      return  ! bail out
-    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
-      call ESMF_StateGet(importState, itemName="theta", field=field, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-      call ESMF_FieldGet(field, farrayPtr=dataPtr_theta, rc=rc)
-      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
-        line=__LINE__, &
-        file=__FILE__)) &
-        return  ! bail out
-    endif
     farrayPtr(si(2):ei(2)) = dataPtr_theta
+    farrayPtr(si(3):ei(3)) = dataPtr_A
+    farrayPtr(si(4):ei(4)) = dataPtr_T
+    if (local_verbose) print *, "farrayPtr = "
+    if (local_verbose) print *, farrayPtr
 
     !--------------------------------------------------------------------------
     ! Run model integration/step
     !--------------------------------------------------------------------------
-
-    print *, "t seconds = ", seconds
+    if (local_verbose) print *, "OCN::ModelAdvance:: calling ESMF_TimeGet..."
+    call ESMF_TimeGet(currTime, s_i8=seconds, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return
+    if (local_verbose) print *, "t seconds = ", seconds
     t = dble(seconds)
 
     if (local_verbose) print *, "OCN::ModelAdvance:: calling ESMF_TimeIntervalGet..."
@@ -519,27 +460,29 @@ module OCN
       line=__LINE__, &
       file=__FILE__)) &
       return
-
-    print *, "dt seconds = ", seconds
+    if (local_verbose) print *, "dt seconds = ", seconds
     dt = dble(seconds)
 
     Nt = 1 !STEVE: just run one step of dt
 
-    !STEVE: I'm assuming all I need to do is update the data array referenced by the pointer that is registered with the state object
-!   print *, "ModelAdvance:: Pre- maooam model run:  farrayP = "
-!   print *, farrayP            ! print PET-local farrayA directly
-    if (local_verbose) print *, "OCN::ModelAdvance:: calling maooam_ocean_run..."
-
     ! Transform seconds to model non-dimensional time (approximate)
     t = t/1000
     dt = dt/1000
-    print *, "Using t = ", t
-    print *, "Using dt = ", dt
+    if (local_verbose) print *, "Using t = ", t
+    if (local_verbose) print *, "Using dt = ", dt
 
+    !--------------------------------------------------------------------------
+    ! Run model integration/step
+    !--------------------------------------------------------------------------
+    if (local_verbose) print *, "OCN::ModelAdvance:: calling maooam_ocean_run..."
     call maooam_ocean_run(X=farrayPtr,t=t,dt=dt,Nt=Nt) !,component)
 
-!   print *, "ModelAdvance:: Post- maooam model run: farrayP = "
-!   print *, farrayP            ! print PET-local farrayA directly
+    ! Write to file
+    if (local_writeout) then
+      inquire(file=outfile, number=iunit)
+      if (iunit < 0) open(fid,file=outfile)
+      write(fid,*) t, farrayPtr(1:ndim)
+    endif
 
     ! Only update the ocean field
     f0 = farrayPtr(0)
@@ -551,4 +494,43 @@ module OCN
 #endif
   end subroutine ModelAdvance
 
-end module
+  subroutine getDataPtr(state,itemName,dataPtr)
+    type(ESMF_State), intent(in)            :: state
+    character(*), intent(in)                :: itemName
+    real(ESMF_KIND_R8), pointer, intent(in) :: dataPtr(:)
+
+    integer                     :: rc
+    type(ESMF_Field)            :: field
+    type(ESMF_StateItem_Flag)   :: itemType
+    character(len=160)          :: msgString
+
+    logical :: local_verbose = .true.
+
+    if (local_verbose) print *, "OCN::getDataPtr ..."
+
+    call ESMF_StateGet(state, itemName=itemName, itemType=itemType, rc=rc)
+    if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+      line=__LINE__, &
+      file=__FILE__)) &
+      return  ! bail out
+    if (itemType /= ESMF_STATEITEM_NOTFOUND) then
+      call ESMF_StateGet(state, itemName=itemName, field=field, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+      call ESMF_FieldGet(field, farrayPtr=dataPtr, rc=rc)
+      if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, &
+        line=__LINE__, &
+        file=__FILE__)) &
+        return  ! bail out
+    else
+      print *, "OCN::getDataPtr:: importState ESMF_STATEITEM_NOTFOUND : ", trim(itemName)
+      stop 8
+    endif
+    if (local_verbose) print *, "OCN::dataPtr (",trim(itemName),")"," = "
+    if (local_verbose) print *, dataPtr
+
+  end subroutine getDataPtr
+
+end module OCN
