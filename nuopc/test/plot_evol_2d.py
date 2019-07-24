@@ -178,7 +178,7 @@ def xy2F(psi,theta,A,T,xs,ys):
   idx = np.abs(s) < low_thresh
   s[idx] = 0
 
-  return s
+  return s[1:]
 
 #------------------------------------------------------------------------------
 # Main
@@ -210,8 +210,12 @@ psi,theta,A,T = F2xy(s,xs,ys)
 
 # Compute the inverse field:
 s2 = xy2F(psi,theta,A,T,xs,ys)
+print('s = ')
+print (s)
 print ('s2 = ')
 print (s2)
+print ('s2 - s=')
+print (s2-s)
 
 # Check inversion procedure:
 #psi,theta,A,T = F2xy(s2,xs,ys)
