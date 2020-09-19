@@ -34,7 +34,6 @@ ecbuild_enable_fortran( REQUIRED )
 # Dependencies
 ################################################################################
 
-
 ################################################################################
 # Definitions
 ################################################################################
@@ -67,7 +66,7 @@ set( MAOOAM_LINKER_LANGUAGE Fortran )
 include( maooam_compiler_flags )
 include_directories( ${MAOOAM_INCLUDE_DIRS} )
 
-add_subdirectory(fortran)
+add_subdirectory(fortran_split)
 
 list ( APPEND maooam_src_files
 	${maooam_modules_files}
