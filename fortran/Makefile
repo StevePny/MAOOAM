@@ -1,30 +1,17 @@
 
 ifndef COMPILER
-  COMPILER=gfortran
-endif
-ifdef INTMODE
-  # Define integrator module
-  INTEGRATOR = $(INTMODE)_integrator
-  TL_AD_INTEGRATOR = $(INTMODE)_tl_ad_integrator
-else
-  # Define integrator module
-  INTEGRATOR = rk2_integrator
-  TL_AD_INTEGRATOR = rk2_tl_ad_integrator
-endif
-ifdef RES
-  ST=_$(RES)
-  $(warning Code will $(RES) the inner products in arrays! It may induce a huge memory usage!)
+  COMPILER=ifort
 endif
 # Define relevant compiler options for debug case and normal case for each compiler
 # Normal Case:
-IFORT_COMPILER_FLAGS = -assume byterecl -O2
+IFORT_COMPILER_FLAGS = -assume byterecl -O2 -fpp
 IFORT_LD_FLAGS = -mkl
-GCC_COMPILER_FLAGS = -O2 -Wall
+GCC_COMPILER_FLAGS = -O2 -Wall -cpp
 GCC_LD_FLAGS = -llapack -lblas
 # Debug Case:
-IFORT_COMPILER_FLAGS_DBG = -O0 -check all -traceback -fpe0 -check bounds -debug all -check uninit -ftrapuv -assume byterecl
+IFORT_COMPILER_FLAGS_DBG = -O0 -check all -traceback -fpe0 -check bounds -debug all -check uninit -ftrapuv -assume byterecl -fpp
 IFORT_LD_FLAGS_DBG = -llapack -lblas
-GCC_COMPILER_FLAGS_DBG = -g -O0 -fbounds-check -Wall -Wextra -Wconversion -pedantic -ffpe-trap=zero,overflow,underflow 
+GCC_COMPILER_FLAGS_DBG = -g -O0 -fbounds-check -Wall -Wextra -Wconversion -pedantic -ffpe-trap=zero,overflow,underflow -fsanitize=address -cpp
 GCC_LD_FLAGS_DBG = -llapack -lblas
 
 
@@ -39,30 +26,15 @@ endif
 
 
 ifeq ($(COMPILER),gfortran)
-  #Derive gfortran version from gcc version and check if >=4.6.0.
-  GVERSION := $(shell gcc -dumpversion)
-  GE40600 := $(shell expr `gcc -dumpversion | sed -e 's/\.\([0-9][0-9]\)/\1/g' -e 's/\.\([0-9]\)/0\1/g' -e 's/^[0-9]\{3,4\}$$/&00/'` \>= 40600)
-  
-  ifeq ($(COMPILER),gfortran)
-    ifeq ($(GE40600), 0)
-#     $(error GCC/gfortran version $(GVERSION) detected. This program uses features of gfortran >= 4.6.0. Please update your toolchain)
-    endif
-  else
-    $(warning This code was optimized for gfortran >= 4.6.0 and has not been tested with other compilers)
-  endif
   COMPILER_FLAGS = $(GCC_COMPILER_FLAGS)
   LD_FLAGS = $(GCC_LD_FLAGS)
   COMPILER_FLAGS_DBG = $(GCC_COMPILER_FLAGS_DBG)
   LD_FLAGS_DBG = $(GCC_LD_FLAGS_DBG)
-  IFPORT = ifport.mod
 else ifeq ($(COMPILER),ifort)
-  $(warning This code was optimized for ifort >= 14.0.2 and has not been tested with other compilers)
   COMPILER_FLAGS = $(IFORT_COMPILER_FLAGS)
   LD_FLAGS = $(IFORT_LD_FLAGS)
   COMPILER_FLAGS_DBG = $(IFORT_COMPILER_FLAGS_DBG)
   LD_FLAGS_DBG = $(IFORT_LD_FLAGS_DBG)
-else
-  $(warning This code was optimized for gfortran >= 4.6.0 and ifort >= 14.0.2 and has not been tested with other compilers)
 endif
 
 .SUFFIXES:
@@ -70,7 +42,7 @@ endif
 
 PROGRAMS = maooam test_tl_ad
 
-MODULES = util.mod params.mod inprod_analytic$(ST).mod aotensor_def.mod ic_def.mod $(INTEGRATOR).mod stat.mod tensor.mod tl_ad_tensor.mod $(TL_AD_INTEGRATOR).mod $(IFPORT)
+MODULES = params.mod util.mod inprod_analytic.mod tensor_def.mod aotensor_def.mod tl_ad_tensor.mod model_def.mod integrator_def.mod rk2_integrator.mod rk4_integrator.mod rk2_tl_integrator.mod rk2_ad_integrator.mod rk4_tl_integrator.mod rk4_ad_integrator.mod stat.mod
 MODULE_OBJECTS = $(MODULES:.mod=.o)
 
 TEST_PROGRAMS = test_inprod_analytic test_aotensor
@@ -103,14 +75,12 @@ test_aotensor.test: test_aotensor
 %: %.o $(MODULE_OBJECTS)
 	$(COMPILER) $(COMPILER_FLAGS) $^ -o $@ $(LD_FLAGS) 
 
-inprod_analytic$(ST).mod: params.mod util.mod
-aotensor_def.mod: tensor.mod inprod_analytic$(ST).mod
-$(INTEGRATOR).mod: aotensor_def.mod
-ic_def.mod: util.mod aotensor_def.mod
-stat.mod: params.mod
-tl_ad_tensor.mod: aotensor_def.mod
-$(TL_AD_INTEGRATOR).mod: tl_ad_tensor.mod
-util.mod: $(IFPORT)
+inprod_analytic.mod: params.mod util.mod
+aotensor_def.mod: tensor_def.mod inprod_analytic.mod params.mod
+integrator_def.mod: model_def.mod
+rk2_integrator.mod: integrator_def.mod
+tl_ad_tensor.mod: aotensor_def.mod tensor_def.mod
+rk2_tl_integrator.mod: rk2_integrator.mod
 
 clean:
 	$(RM) *.o *.mod $(PROGRAMS) $(TEST_PROGRAMS) tests/*.out

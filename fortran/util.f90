@@ -1,11 +1,10 @@
 
-
 ! util.f90
 !
 !>  Utility module
 !
 !> @copyright                                                               
-!> 2018 Lesley De Cruz & Jonathan Demaeyer.
+!> 2018-2020 Lesley De Cruz & Jonathan Demaeyer.
 !> See LICENSE.txt for license information.                                  
 !
 !---------------------------------------------------------------------------!
@@ -21,7 +20,7 @@ CONTAINS
     
   ! SUBROUTINE scalar_allocate(x)
   !   INTEGER :: AllocStat
-  !   IF (.NOT. ALLOCATED(x)) THEN 
+  !   IF (.NOT. allocated(x)) THEN
   !      ALLOCATE(x, STAT=AllocStat)
   
   !> Convert an integer to string.
@@ -60,7 +59,9 @@ CONTAINS
   !> Random generator initialization routine  
   SUBROUTINE init_random_seed()
     USE iso_fortran_env, only: int64
-    USE IFPORT !, only: getpid
+#ifdef __INTEL_COMPILER
+    USE IFPORT
+#endif
     IMPLICIT NONE
     INTEGER, ALLOCATABLE :: seed_loc(:)
     INTEGER :: i, n, un, istat, dt(8), pid
